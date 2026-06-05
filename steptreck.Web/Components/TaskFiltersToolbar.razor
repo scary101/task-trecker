@@ -1,0 +1,93 @@
+<div class="task-toolbar-head">
+    <div class="task-summary">Найдено: @ItemsCount</div>
+    <button class="filter-toggle" type="button" @onclick="ToggleCollapsed" aria-expanded="@(!Collapsed)">
+        <i class="bi @(Collapsed ? "bi-chevron-down" : "bi-chevron-up")" aria-hidden="true"></i>
+        <span>@(Collapsed ? "Показать фильтры" : "Скрыть фильтры")</span>
+    </button>
+</div>
+
+@if (!Collapsed)
+{
+    <section class="task-filter-toolbar card">
+        <label class="task-filter search">
+            <span>Поиск</span>
+            <input value="@SearchTerm" @oninput="OnSearchChanged" type="search" placeholder="Название задачи" />
+        </label>
+
+        <label class="task-filter">
+            <span>Критичность</span>
+            <select value="@PriorityFilter" @onchange="OnPriorityChanged">
+                <option value="all">Все</option>
+                <option value="low">Низкая</option>
+                <option value="normal">Обычная</option>
+                <option value="high">Высокая</option>
+                <option value="critical">Критическая</option>
+            </select>
+        </label>
+
+        <label class="task-filter">
+            <span>Дата</span>
+            <select value="@DateSort" @onchange="OnDateSortChanged">
+                <option value="none">Без сортировки</option>
+                <option value="deadline_asc">Срок: сначала ранние</option>
+                <option value="deadline_desc">Срок: сначала поздние</option>
+                <option value="no_deadline_first">Без срока сначала</option>
+            </select>
+        </label>
+
+        <div class="task-filter task-filter-action">
+            <span>Сброс</span>
+            <button class="btn ghost reset-btn" type="button" @onclick="ResetAsync">
+                <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                <span>Сбросить</span>
+            </button>
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter] public int ItemsCount { get; set; }
+    [Parameter] public string SearchTerm { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchTermChanged { get; set; }
+    [Parameter] public string PriorityFilter { get; set; } = "all";
+    [Parameter] public EventCallback<string> PriorityFilterChanged { get; set; }
+    [Parameter] public string DateSort { get; set; } = "none";
+    [Parameter] public EventCallback<string> DateSortChanged { get; set; }
+    [Parameter] public bool Collapsed { get; set; }
+    [Parameter] public EventCallback<bool> CollapsedChanged { get; set; }
+
+    private async Task ToggleCollapsed()
+    {
+        Collapsed = !Collapsed;
+        await CollapsedChanged.InvokeAsync(Collapsed);
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs args)
+    {
+        SearchTerm = args.Value?.ToString() ?? string.Empty;
+        await SearchTermChanged.InvokeAsync(SearchTerm);
+    }
+
+    private async Task OnPriorityChanged(ChangeEventArgs args)
+    {
+        PriorityFilter = args.Value?.ToString() ?? "all";
+        await PriorityFilterChanged.InvokeAsync(PriorityFilter);
+    }
+
+    private async Task OnDateSortChanged(ChangeEventArgs args)
+    {
+        DateSort = args.Value?.ToString() ?? "none";
+        await DateSortChanged.InvokeAsync(DateSort);
+    }
+
+    private async Task ResetAsync()
+    {
+        SearchTerm = string.Empty;
+        PriorityFilter = "all";
+        DateSort = "none";
+
+        await SearchTermChanged.InvokeAsync(SearchTerm);
+        await PriorityFilterChanged.InvokeAsync(PriorityFilter);
+        await DateSortChanged.InvokeAsync(DateSort);
+    }
+}

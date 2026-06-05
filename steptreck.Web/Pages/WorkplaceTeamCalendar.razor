@@ -1,0 +1,888 @@
+@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/calendar"
+@using System.Globalization
+@using steptreck.Domain.DTOs.CalendarDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@inject steptreck.Web.ViewModel.CalendarViewModel CalendarVm
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-calendar-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="calendar"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        <div class="calendar-shell">
+            <header class="calendar-toolbar">
+                <div class="calendar-heading">
+                    <span class="calendar-eyebrow">Календарь команды</span>
+                    <h1>@(_team?.Name ?? $"Команда #{TeamId}")</h1>
+                    <p>@WeekRangeText</p>
+                </div>
+
+                <div class="week-nav" aria-label="Переключение недели">
+                    <button class="icon-button" type="button" title="Предыдущая неделя" @onclick="PreviousWeek">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                    </button>
+                    <button class="today-button" type="button" @onclick="GoToToday">Сегодня</button>
+                    <button class="icon-button" type="button" title="Следующая неделя" @onclick="NextWeek">
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="toolbar-actions">
+                    <span class="events-counter"><strong>@FilteredEvents.Count</strong> событий</span>
+                    @if (CanCreateManualEvents)
+                    {
+                    <button class="btn primary create-event-button" type="button" @onclick="OpenCreateModal">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        <span>Создать событие</span>
+                    </button>
+                    }
+                </div>
+            </header>
+
+            <section class="filter-strip" aria-label="Фильтры календаря">
+                @foreach (var filter in CalendarFilters)
+                {
+                    <button class="filter-chip @(filter.Enabled ? "enabled" : "") @filter.CssClass"
+                            type="button"
+                            aria-pressed="@filter.Enabled"
+                            @onclick="filter.Toggle">
+                        <span class="chip-check">
+                            @if (filter.Enabled)
+                            {
+                                <i class="bi bi-check2" aria-hidden="true"></i>
+                            }
+                        </span>
+                        <span>@filter.Label</span>
+                    </button>
+                }
+            </section>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            @if (_loading)
+            {
+                <div class="calendar-state">
+                    <div class="calendar-loader"></div>
+                    <strong>Загружаем календарь...</strong>
+                </div>
+            }
+            else
+            {
+                <section class="calendar-board" aria-label="Недельный календарь">
+                    <div class="calendar-scroll">
+                        <div class="calendar-week-head">
+                            <div class="time-head"></div>
+                            @foreach (var day in WeekDays)
+                            {
+                                var dayEvents = GetDayEvents(day).ToList();
+                                <button class="day-head @(day.Date == DateTime.Today ? "today" : "")"
+                                        type="button"
+                                        @onclick="() => OpenDayModal(day)">
+                                    <span>@FormatWeekDay(day)</span>
+                                    <strong>@day.Day</strong>
+                                    <small>@dayEvents.Count</small>
+                                </button>
+                            }
+                        </div>
+
+                        <div class="calendar-body">
+                            <div class="time-rail">
+                                @foreach (var hour in Hours)
+                                {
+                                    <div class="time-slot">@($"{hour:00}:00")</div>
+                                }
+                            </div>
+
+                            @foreach (var day in WeekDays)
+                            {
+                                var layoutEvents = GetDayLayoutEvents(day);
+                                <div class="day-column" @onclick="() => OpenDayModal(day)">
+                                    @foreach (var eventLayout in layoutEvents)
+                                    {
+                                        var item = eventLayout.Event;
+                                        <button class="calendar-event @GetEventCss(item) @(item.IsPinned ? "pinned" : "")"
+                                                type="button"
+                                                style="@eventLayout.Style"
+                                                title="@item.Title"
+                                                @onclick:stopPropagation="true"
+                                                @onclick="() => OpenEventDetails(item)">
+                                            <span class="event-type-dot"></span>
+                                            <span class="event-copy">
+                                                <strong>@item.Title</strong>
+                                                <small>@FormatEventTime(item)</small>
+                                            </span>
+                                            @if (item.IsPinned)
+                                            {
+                                                <i class="bi bi-pin-angle-fill event-pin" aria-hidden="true"></i>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </section>
+            }
+        </div>
+    </section>
+</main>
+
+@if (_selectedDay.HasValue)
+{
+    var day = _selectedDay.Value;
+    var dayEvents = GetDayEvents(day).ToList();
+    <div class="modal-backdrop" @onclick="CloseDayModal">
+        <aside class="calendar-panel" @onclick:stopPropagation="true">
+            <div class="panel-head">
+                <div>
+                    <span>День</span>
+                    <h2>@FormatFullDate(day)</h2>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseDayModal" aria-label="Закрыть">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            @if (dayEvents.Count == 0)
+            {
+                <div class="empty-day">На этот день событий нет.</div>
+            }
+            else
+            {
+                <div class="day-event-list">
+                    @foreach (var item in dayEvents)
+                    {
+                        <button class="day-event-row @GetEventCss(item)" type="button" @onclick="() => OpenEventDetails(item)">
+                            <span class="event-type-dot"></span>
+                            <span class="day-event-copy">
+                                <strong>@item.Title</strong>
+                                <small>@FormatEventTime(item) · @GetEventTypeLabel(item.Type)</small>
+                            </span>
+                            @if (item.IsPinned)
+                            {
+                                <i class="bi bi-pin-angle-fill" aria-hidden="true"></i>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+        </aside>
+    </div>
+}
+
+@if (_selectedEvent is not null)
+{
+    <div class="modal-backdrop" @onclick="CloseEventDetails">
+        <aside class="calendar-panel detail-panel" @onclick:stopPropagation="true">
+            <div class="panel-head">
+                <div>
+                    <span>@GetEventTypeLabel(_selectedEvent.Type)</span>
+                    <h2>@_selectedEvent.Title</h2>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseEventDetails" aria-label="Закрыть">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="event-summary @GetEventCss(_selectedEvent)">
+                <span class="event-type-dot"></span>
+                <strong>@FormatEventTime(_selectedEvent)</strong>
+                @if (_selectedEvent.IsPinned)
+                {
+                    <span class="pinned-badge"><i class="bi bi-pin-angle-fill" aria-hidden="true"></i> Закреплено</span>
+                }
+            </div>
+
+            <dl class="event-details">
+                <div>
+                    <dt>Начало</dt>
+                    <dd>@_selectedEvent.StartAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+                </div>
+                @if (_selectedEvent.EndAt.HasValue)
+                {
+                    <div>
+                        <dt>Окончание</dt>
+                        <dd>@_selectedEvent.EndAt.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_selectedEvent.Priority))
+                {
+                    <div>
+                        <dt>Приоритет</dt>
+                        <dd>@_selectedEvent.Priority</dd>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(_selectedEvent.Status))
+                {
+                    <div>
+                        <dt>Статус</dt>
+                        <dd>@_selectedEvent.Status</dd>
+                    </div>
+                }
+            </dl>
+
+            <div class="panel-actions">
+                @if (_selectedEvent.TaskId.HasValue && !_isOwner)
+                {
+                    <button class="btn primary" type="button" @onclick="() => OpenTask(_selectedEvent.TaskId.Value)">
+                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                        Открыть задачу
+                    </button>
+                }
+                @if (TryGetManualEventId(_selectedEvent, out var manualEventId))
+                {
+                    <button class="btn ghost" type="button" @onclick="() => OpenEditModal(_selectedEvent, manualEventId)">
+                        Редактировать
+                    </button>
+                    <button class="btn danger" type="button" @onclick="() => DeleteEventAsync(manualEventId)" disabled="@_busy">
+                        Удалить
+                    </button>
+                }
+            </div>
+        </aside>
+    </div>
+}
+
+@if (_showEventModal)
+{
+    <div class="modal-backdrop" @onclick="CloseEventModal">
+        <div class="event-modal" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div>
+                    <h2>@(_editingEventId.HasValue ? "Редактировать событие" : "Создать событие")</h2>
+                    <p>Ручные события календаря: встречи и важные даты.</p>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseEventModal" aria-label="Закрыть">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_modalAlert))
+            {
+                <div class="alert @(_modalAlertKind)">@_modalAlert</div>
+            }
+
+            <div class="event-form">
+                <label class="field span-2">
+                    <span>Название</span>
+                    <input class="input" @bind="_eventTitle" placeholder="Например, планирование спринта" />
+                </label>
+
+                <label class="field">
+                    <span>Тип</span>
+                    <select class="input" @bind="_eventType">
+                        <option value="Meeting">Встреча</option>
+                        <option value="ImportantDate">Важная дата</option>
+                    </select>
+                </label>
+
+                <label class="field">
+                    <span>Закрепление</span>
+                    <label class="pin-toggle">
+                        <input type="checkbox" @bind="_eventPinned" />
+                        <span><i class="bi bi-pin-angle-fill" aria-hidden="true"></i> Выше остальных</span>
+                    </label>
+                </label>
+
+                <label class="field">
+                    <span>Дата начала</span>
+                    <input class="input" type="date" value="@_eventStartDate" @onchange="OnStartDateChanged" />
+                </label>
+                <label class="field">
+                    <span>Время начала</span>
+                    <input class="input" type="time" value="@_eventStartTime" @onchange="OnStartTimeChanged" />
+                </label>
+                <label class="field">
+                    <span>Дата окончания</span>
+                    <input class="input" type="date" value="@_eventEndDate" @onchange="OnEndDateChanged" />
+                </label>
+                <label class="field">
+                    <span>Время окончания</span>
+                    <input class="input" type="time" value="@_eventEndTime" @onchange="OnEndTimeChanged" />
+                </label>
+                <label class="field span-2">
+                    <span>Описание</span>
+                    <textarea class="input" rows="3" @bind="_eventDescription"></textarea>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn primary" type="button" @onclick="SaveEventAsync" disabled="@_busy">
+                    @(_busy ? "Сохраняем..." : "Сохранить")
+                </button>
+                <button class="btn ghost" type="button" @onclick="CloseEventModal" disabled="@_busy">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int HourHeight = 68;
+    private const int EventColumnGap = 4;
+
+    private static readonly CultureInfo RuCulture = new("ru-RU");
+
+    private TeamReadDto? _team;
+    private List<CalendarEventDto> _events = new();
+    private DateTime _weekStart = StartOfWeek(DateTime.Today);
+    private bool _loading = true;
+    private bool _busy;
+    private bool _roleReady;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private bool _isOwner;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private string? _modalAlert;
+    private string _modalAlertKind = "ok";
+    private DateTime? _selectedDay;
+    private CalendarEventDto? _selectedEvent;
+    private bool _showEventModal;
+    private int? _editingEventId;
+
+    private bool _showDeadlines = true;
+    private bool _showCompleted = true;
+    private bool _showCreated = true;
+    private bool _showMeetings = true;
+    private bool _showImportantDates = true;
+
+    private string _eventTitle = string.Empty;
+    private string _eventType = "Meeting";
+    private string _eventStartDate = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private string _eventStartTime = "09:00";
+    private string _eventEndDate = string.Empty;
+    private string _eventEndTime = string.Empty;
+    private string? _eventDescription;
+    private bool _eventPinned;
+
+    private IEnumerable<int> Hours => Enumerable.Range(0, 24);
+    private IEnumerable<DateTime> WeekDays => Enumerable.Range(0, 7).Select(offset => _weekStart.AddDays(offset));
+    private bool CanCreateManualEvents => !_isEmployee;
+
+    private string WeekRangeText
+    {
+        get
+        {
+            var end = _weekStart.AddDays(6);
+            if (_weekStart.Month == end.Month && _weekStart.Year == end.Year)
+                return $"{_weekStart:dd}-{end:dd} {end.ToString("MMMM yyyy", RuCulture)}";
+
+            return $"{_weekStart.ToString("dd MMMM", RuCulture)} - {end.ToString("dd MMMM yyyy", RuCulture)}";
+        }
+    }
+
+    private List<CalendarEventDto> FilteredEvents => _events
+        .Where(IsEventVisible)
+        .Where(item =>
+        {
+            var day = item.StartAt.ToLocalTime().Date;
+            return day >= _weekStart && day <= _weekStart.AddDays(6);
+        })
+        .OrderByDescending(item => item.IsPinned)
+        .ThenBy(item => item.StartAt)
+        .ToList();
+
+    private IEnumerable<FilterItem> CalendarFilters =>
+    [
+        new("Дедлайны", "deadline", _showDeadlines, () => _showDeadlines = !_showDeadlines),
+        new("Завершения", "completed", _showCompleted, () => _showCompleted = !_showCompleted),
+        new("Созданные задачи", "created", _showCreated, () => _showCreated = !_showCreated),
+        new("Встречи", "meeting", _showMeetings, () => _showMeetings = !_showMeetings),
+        new("Важные даты", "important", _showImportantDates, () => _showImportantDates = !_showImportantDates)
+    ];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _isOwner = roleId == OwnerRoleId;
+
+        if (_isEmployee || _isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/calendar", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _team = await TeamsVm.GetTeamAsync(TeamId);
+        _events = await CalendarVm.GetTeamEventsAsync(TeamId);
+        _loading = false;
+    }
+
+    private void PreviousWeek() => _weekStart = _weekStart.AddDays(-7);
+    private void NextWeek() => _weekStart = _weekStart.AddDays(7);
+    private void GoToToday() => _weekStart = StartOfWeek(DateTime.Today);
+
+    private IEnumerable<CalendarEventDto> GetDayEvents(DateTime day)
+        => FilteredEvents
+            .Where(item => item.StartAt.ToLocalTime().Date == day.Date)
+            .OrderByDescending(item => item.IsPinned)
+            .ThenBy(item => item.StartAt);
+
+    private List<CalendarEventLayout> GetDayLayoutEvents(DateTime day)
+    {
+        var events = FilteredEvents
+            .Where(item => item.StartAt.ToLocalTime().Date == day.Date)
+            .OrderBy(item => item.StartAt.ToLocalTime())
+            .ThenByDescending(GetLayoutDurationMinutes)
+            .ThenByDescending(item => item.IsPinned)
+            .ToList();
+
+        var result = new List<CalendarEventLayout>(events.Count);
+        var index = 0;
+
+        while (index < events.Count)
+        {
+            var group = new List<CalendarEventDto> { events[index] };
+            var groupEnd = GetLayoutEnd(events[index]);
+            index++;
+
+            while (index < events.Count && events[index].StartAt.ToLocalTime() < groupEnd)
+            {
+                group.Add(events[index]);
+                var itemEnd = GetLayoutEnd(events[index]);
+                if (itemEnd > groupEnd)
+                    groupEnd = itemEnd;
+
+                index++;
+            }
+
+            result.AddRange(BuildLayoutGroup(group));
+        }
+
+        return result
+            .OrderBy(item => item.Event.StartAt.ToLocalTime())
+            .ThenBy(item => item.ColumnIndex)
+            .ToList();
+    }
+
+    private static List<CalendarEventLayout> BuildLayoutGroup(List<CalendarEventDto> group)
+    {
+        var columns = new List<DateTime>();
+        var assigned = new List<(CalendarEventDto Event, int Column)>(group.Count);
+
+        foreach (var item in group
+            .OrderBy(item => item.StartAt.ToLocalTime())
+            .ThenByDescending(GetLayoutDurationMinutes)
+            .ThenByDescending(item => item.IsPinned))
+        {
+            var start = item.StartAt.ToLocalTime();
+            var columnIndex = columns.FindIndex(columnEnd => columnEnd <= start);
+
+            if (columnIndex < 0)
+            {
+                columnIndex = columns.Count;
+                columns.Add(GetLayoutEnd(item));
+            }
+            else
+            {
+                columns[columnIndex] = GetLayoutEnd(item);
+            }
+
+            assigned.Add((item, columnIndex));
+        }
+
+        var columnCount = Math.Max(1, columns.Count);
+        return assigned
+            .Select(item => new CalendarEventLayout(
+                item.Event,
+                item.Column,
+                columnCount,
+                BuildLayoutStyle(item.Event, item.Column, columnCount)))
+            .ToList();
+    }
+
+    private bool IsEventVisible(CalendarEventDto item)
+        => NormalizeType(item.Type) switch
+        {
+            "TaskDeadline" => _showDeadlines,
+            "TaskCompleted" => _showCompleted,
+            "TaskCreated" => _showCreated,
+            "Meeting" => _showMeetings,
+            "ImportantDate" => _showImportantDates,
+            _ => true
+        };
+
+    private static string BuildLayoutStyle(CalendarEventDto item, int columnIndex, int columnCount)
+    {
+        var localStart = item.StartAt.ToLocalTime();
+        var startMinutes = localStart.Hour * 60 + localStart.Minute;
+        var top = Math.Round(startMinutes / 60d * HourHeight, 2);
+        var durationMinutes = GetLayoutDurationMinutes(item);
+        var height = Math.Max(38, Math.Min(Math.Round(durationMinutes / 60d * HourHeight, 2), HourHeight * 4));
+        var widthPercent = 100d / columnCount;
+        var pixelCorrection = (16d + EventColumnGap * (columnCount - 1)) / columnCount;
+        var leftPixels = 8d + columnIndex * (EventColumnGap - pixelCorrection);
+        var leftPercent = columnIndex * widthPercent;
+        var zIndex = item.IsPinned ? 20 + columnIndex : 10 + columnIndex;
+
+        return string.Join(
+            string.Empty,
+            $"top:{top.ToString(CultureInfo.InvariantCulture)}px;",
+            $"height:{height.ToString(CultureInfo.InvariantCulture)}px;",
+            $"left:calc({leftPercent.ToString("0.####", CultureInfo.InvariantCulture)}% + {leftPixels.ToString("0.##", CultureInfo.InvariantCulture)}px);",
+            $"width:calc({widthPercent.ToString("0.####", CultureInfo.InvariantCulture)}% - {pixelCorrection.ToString("0.##", CultureInfo.InvariantCulture)}px);",
+            $"z-index:{zIndex};");
+    }
+
+    private static double GetLayoutDurationMinutes(CalendarEventDto item)
+    {
+        var start = item.StartAt.ToLocalTime();
+        if (!item.EndAt.HasValue)
+            return 45;
+
+        return Math.Max(30, (item.EndAt.Value.ToLocalTime() - start).TotalMinutes);
+    }
+
+    private static DateTime GetLayoutEnd(CalendarEventDto item)
+        => item.StartAt.ToLocalTime().AddMinutes(GetLayoutDurationMinutes(item));
+
+    private static string FormatWeekDay(DateTime day)
+        => day.ToString("ddd", RuCulture);
+
+    private static string FormatFullDate(DateTime day)
+        => day.ToString("d MMMM yyyy", RuCulture);
+
+    private static string FormatEventTime(CalendarEventDto item)
+    {
+        var start = item.StartAt.ToLocalTime();
+        if (item.EndAt.HasValue)
+            return $"{start:HH:mm}-{item.EndAt.Value.ToLocalTime():HH:mm}";
+
+        return start.TimeOfDay == TimeSpan.Zero ? "Весь день" : start.ToString("HH:mm");
+    }
+
+    private static string GetEventCss(CalendarEventDto item)
+        => NormalizeType(item.Type) switch
+        {
+            "Meeting" => "meeting",
+            "ImportantDate" => "important",
+            "TaskDeadline" => "deadline",
+            "TaskCompleted" => "completed",
+            "TaskCreated" => "created",
+            _ => "custom"
+        };
+
+    private static string GetEventTypeLabel(string? type)
+        => NormalizeType(type) switch
+        {
+            "Meeting" => "Встреча",
+            "ImportantDate" => "Важная дата",
+            "TaskDeadline" => "Дедлайн",
+            "TaskCompleted" => "Завершение",
+            "TaskCreated" => "Созданная задача",
+            _ => "Событие"
+        };
+
+    private static string NormalizeType(string? type)
+        => (type ?? string.Empty).Trim();
+
+    private void OpenDayModal(DateTime day)
+        => _selectedDay = day.Date;
+
+    private void CloseDayModal()
+        => _selectedDay = null;
+
+    private void OpenEventDetails(CalendarEventDto item)
+    {
+        _selectedDay = null;
+        _selectedEvent = item;
+    }
+
+    private void CloseEventDetails()
+        => _selectedEvent = null;
+
+    private void OpenCreateModal()
+    {
+        if (!CanCreateManualEvents)
+        {
+            _alertKind = "err";
+            _alert = "Обычный сотрудник не может создавать события календаря.";
+            return;
+        }
+
+        _editingEventId = null;
+        _eventTitle = string.Empty;
+        _eventType = "Meeting";
+        _eventStartDate = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        _eventStartTime = "09:00";
+        _eventEndDate = string.Empty;
+        _eventEndTime = string.Empty;
+        _eventDescription = null;
+        _eventPinned = false;
+        _modalAlert = null;
+        _modalAlertKind = "ok";
+        _showEventModal = true;
+    }
+
+    private void OpenEditModal(CalendarEventDto item, int eventId)
+    {
+        _selectedEvent = null;
+        _editingEventId = eventId;
+        _eventTitle = item.Title;
+        _eventType = NormalizeType(item.Type) == "ImportantDate" ? "ImportantDate" : "Meeting";
+        _eventStartDate = item.StartAt.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        _eventStartTime = item.StartAt.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture);
+        _eventEndDate = item.EndAt?.ToLocalTime().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
+        _eventEndTime = item.EndAt?.ToLocalTime().ToString("HH:mm", CultureInfo.InvariantCulture) ?? string.Empty;
+        _eventDescription = null;
+        _eventPinned = item.IsPinned;
+        _modalAlert = null;
+        _modalAlertKind = "ok";
+        _showEventModal = true;
+    }
+
+    private void CloseEventModal()
+        => _showEventModal = false;
+
+    private void OnStartDateChanged(ChangeEventArgs e)
+        => _eventStartDate = e.Value?.ToString() ?? string.Empty;
+
+    private void OnStartTimeChanged(ChangeEventArgs e)
+        => _eventStartTime = e.Value?.ToString() ?? string.Empty;
+
+    private void OnEndDateChanged(ChangeEventArgs e)
+        => _eventEndDate = e.Value?.ToString() ?? string.Empty;
+
+    private void OnEndTimeChanged(ChangeEventArgs e)
+        => _eventEndTime = e.Value?.ToString() ?? string.Empty;
+
+    private async Task SaveEventAsync()
+    {
+        if (!_editingEventId.HasValue && !CanCreateManualEvents)
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Обычный сотрудник не может создавать события календаря.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_eventTitle))
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Введите название события.";
+            return;
+        }
+
+        if (!TryBuildEventDates(out var startAt, out var endAt, out var error))
+        {
+            _modalAlertKind = "err";
+            _modalAlert = error;
+            return;
+        }
+
+        if (!_editingEventId.HasValue && startAt.Date < DateTime.Today)
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Нельзя создать событие раньше текущей даты.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (_editingEventId.HasValue)
+            {
+                var dto = new UpdateProjectCalendarEventDto
+                {
+                    Title = _eventTitle.Trim(),
+                    Type = _eventType,
+                    StartAt = startAt,
+                    EndAt = endAt,
+                    Description = _eventDescription,
+                    IsPinned = _eventPinned
+                };
+
+                var (result, _) = await CalendarVm.UpdateEventAsync(_editingEventId.Value, dto);
+                if (!result.Success)
+                {
+                    _modalAlertKind = "err";
+                    _modalAlert = result.Error ?? "Не удалось обновить событие.";
+                    return;
+                }
+            }
+            else
+            {
+                var dto = new CreateProjectCalendarEventDto
+                {
+                    TeamId = TeamId,
+                    Title = _eventTitle.Trim(),
+                    Type = _eventType,
+                    StartAt = startAt,
+                    EndAt = endAt,
+                    Description = _eventDescription,
+                    IsPinned = _eventPinned
+                };
+
+                var (result, _) = await CalendarVm.CreateEventAsync(dto);
+                if (!result.Success)
+                {
+                    _modalAlertKind = "err";
+                    _modalAlert = result.Error ?? "Не удалось создать событие.";
+                    return;
+                }
+            }
+
+            _showEventModal = false;
+            _alertKind = "ok";
+            _alert = _editingEventId.HasValue ? "Событие обновлено." : "Событие создано.";
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private bool TryBuildEventDates(out DateTime startAt, out DateTime? endAt, out string? error)
+    {
+        startAt = default;
+        endAt = null;
+        error = null;
+
+        if (!DateOnly.TryParse(_eventStartDate, CultureInfo.InvariantCulture, out var startDate) ||
+            !TimeOnly.TryParse(string.IsNullOrWhiteSpace(_eventStartTime) ? "00:00" : _eventStartTime, CultureInfo.InvariantCulture, out var startTime))
+        {
+            error = "Выберите корректные дату и время начала.";
+            return false;
+        }
+
+        startAt = startDate.ToDateTime(startTime);
+
+        if (string.IsNullOrWhiteSpace(_eventEndDate) && string.IsNullOrWhiteSpace(_eventEndTime))
+            return true;
+
+        var endDateText = string.IsNullOrWhiteSpace(_eventEndDate) ? _eventStartDate : _eventEndDate;
+        var endTimeText = string.IsNullOrWhiteSpace(_eventEndTime) ? _eventStartTime : _eventEndTime;
+
+        if (!DateOnly.TryParse(endDateText, CultureInfo.InvariantCulture, out var endDate) ||
+            !TimeOnly.TryParse(string.IsNullOrWhiteSpace(endTimeText) ? "00:00" : endTimeText, CultureInfo.InvariantCulture, out var endTime))
+        {
+            error = "Выберите корректные дату и время окончания.";
+            return false;
+        }
+
+        endAt = endDate.ToDateTime(endTime);
+        if (endAt < startAt)
+        {
+            error = "Окончание не может быть раньше начала.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task DeleteEventAsync(int eventId)
+    {
+        _busy = true;
+        try
+        {
+            var result = await CalendarVm.DeleteEventAsync(eventId);
+            if (result.Success)
+            {
+                _selectedEvent = null;
+                _alertKind = "ok";
+                _alert = "Событие удалено.";
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось удалить событие.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static bool TryGetManualEventId(CalendarEventDto item, out int eventId)
+    {
+        eventId = 0;
+        var id = item.Id ?? string.Empty;
+        return id.StartsWith("event-", StringComparison.OrdinalIgnoreCase) &&
+               int.TryParse(id["event-".Length..], CultureInfo.InvariantCulture, out eventId);
+    }
+
+    private void OpenTask(int taskId)
+    {
+        if (_isOwner)
+            return;
+
+        Nav.NavigateTo($"/workplace/tasks/{taskId}");
+    }
+
+    private void GoToInfo() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+    private void GoToMembers() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+    private void GoToStats() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+    private void GoToCalendar() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/calendar");
+    private void GoToFiles() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+    private void GoToTasks()
+    {
+        if (_isOwner)
+            return;
+
+        Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+    }
+    private void GoToChat() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+
+    private static DateTime StartOfWeek(DateTime date)
+    {
+        var diff = ((int)date.DayOfWeek + 6) % 7;
+        return date.Date.AddDays(-diff);
+    }
+
+    private sealed record FilterItem(string Label, string CssClass, bool Enabled, Action Toggle);
+
+    private sealed record CalendarEventLayout(
+        CalendarEventDto Event,
+        int ColumnIndex,
+        int ColumnCount,
+        string Style);
+}

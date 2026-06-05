@@ -1,0 +1,327 @@
+@media (max-width: 1180px) {
+    :is(
+        .projects-grid,
+        .members-grid,
+        .teams-grid,
+        .sessions-grid,
+        .sub-cards,
+        .hero-stats,
+        .panel-grid,
+        .feature-grid,
+        .plans-grid,
+        .profile-header-meta,
+        .project-members-grid,
+        .analytics-kpis,
+        .analytics-grid,
+        .analytics-cards,
+        .owner-kpis,
+        .owner-grid,
+        .summary-grid,
+        .history-meta,
+        .my-history-stats,
+        .stats-grid,
+        .ops-grid,
+        .ops-stats,
+        .work-time-summary
+    ) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    :is(
+        .hero,
+        .profile-header,
+        .profile-layout,
+        .config-hero,
+        .config-shell,
+        .control-track-row
+    ) {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-actions {
+        max-width: none;
+        margin-left: 0;
+    }
+
+    .summary-panel {
+        position: static;
+    }
+}
+
+@media (max-width: 900px) {
+    :is(
+        .section-head,
+        .owner-head,
+        .toolbar-head,
+        .details-head,
+        .chart-head,
+        .analytics-hero,
+        .data-hero,
+        .panel-head,
+        .task-hero
+    ) {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    :is(
+        .section-head,
+        .owner-head,
+        .toolbar-head,
+        .details-head,
+        .chart-head,
+        .analytics-hero,
+        .data-hero,
+        .panel-head,
+        .task-hero
+    ) > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    :is(
+        .history-toolbar,
+        .filters-panel,
+        .date-filters,
+        .members-toolbar,
+        .session-toolbar,
+        .member-profile-layout,
+        .task-grid,
+        .details-layout,
+        .checkout-grid,
+        .reset-page,
+        .profile-grid,
+        .owner-split,
+        .details-meta,
+        .profile-meta,
+        .config-hero,
+        .config-shell,
+        .control-track-row,
+        .calendar-toolbar
+    ) {
+        grid-template-columns: 1fr;
+    }
+
+    :is(.analytics-table, .owner-table, .history-table, .sessions-table, .calendar-board) {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 760px) {
+    :is(
+        .projects-grid,
+        .members-grid,
+        .teams-grid,
+        .sessions-grid,
+        .sub-cards,
+        .hero-stats,
+        .panel-grid,
+        .feature-grid,
+        .plans-grid,
+        .profile-header-meta,
+        .tasks-grid,
+        .files-grid,
+        .project-members-grid,
+        .analytics-kpis,
+        .analytics-grid,
+        .analytics-cards,
+        .owner-kpis,
+        .owner-grid,
+        .summary-grid,
+        .history-meta,
+        .my-history-stats,
+        .zone-grid,
+        .audit-values,
+        .stats-grid,
+        .podium,
+        .ops-grid,
+        .ops-stats,
+        .work-time-summary,
+        .details-meta,
+        .profile-meta,
+        .mini-stats
+    ) {
+        grid-template-columns: 1fr;
+    }
+
+    :is(
+        .project-tabs,
+        .team-tabs,
+        .filter-strip,
+        .toolbar-actions,
+        .chart-head-actions,
+        .details-actions,
+        .file-upload-actions,
+        .modal-actions,
+        .panel-actions
+    ) {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        scrollbar-width: none;
+    }
+
+    :is(
+        .project-tabs,
+        .team-tabs,
+        .filter-strip,
+        .toolbar-actions,
+        .chart-head-actions,
+        .details-actions,
+        .file-upload-actions,
+        .modal-actions,
+        .panel-actions
+    )::-webkit-scrollbar {
+        display: none;
+    }
+
+    :is(.table-row, .checklist-row, .task-card, .method-actions, .panel-row) {
+        grid-template-columns: 1fr;
+    }
+
+    .task-side {
+        text-align: left;
+    }
+
+    .date-filter {
+        min-width: 0;
+    }
+
+    :is(.analytics-row, .owner-row, .history-row) {
+        min-width: 720px;
+    }
+
+    :is(.home, .sub-config-page) {
+        padding-inline: 14px;
+    }
+
+    :is(.hero, .cta, .config-hero, .config-section, .summary-panel, .profile-header, .panel) {
+        padding: 16px;
+    }
+
+    .panel-tag {
+        width: fit-content;
+    }
+
+    .avatar-dropzone {
+        grid-template-columns: 76px minmax(0, 1fr);
+    }
+
+    .dropzone-action {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
+
+    :is(.value-stepper, .duration-input-row) {
+        width: 100%;
+        grid-template-columns: 40px minmax(0, 1fr) 40px;
+    }
+}
+
+@media (max-width: 560px) {
+    :is(.card, .analytics-panel, .owner-panel, .details-shell, .task-card, .project-card, .member-card) {
+        border-radius: 10px;
+    }
+
+    :is(.analytics-empty, .analytics-panel, .analytics-kpi, .risk-card, .owner-kpi, .owner-panel, .details-shell) {
+        padding: 14px;
+    }
+
+    :is(.details-cover, .details-cover.has-bg) {
+        min-height: 170px;
+        margin: -14px -14px 0;
+        border-radius: 10px 10px 0 0;
+    }
+
+    :is(.cover-bg-upload, .btn, button, label.btn) {
+        max-width: 100%;
+    }
+
+    :is(.section-head .btn, .details-actions .btn, .toolbar-actions .btn, .chart-head-actions .btn) {
+        width: 100%;
+    }
+
+    :is(.owner-row, .analytics-row, .history-row) {
+        min-width: 640px;
+    }
+
+    :is(.hero-content h1, .auth-head h1, .profile-header h1, .hero-copy h1) {
+        overflow-wrap: anywhere;
+    }
+
+    .hero-content h1 {
+        max-width: none;
+    }
+
+    :is(.owner-kpi strong, .analytics-kpi strong) {
+        font-size: 28px;
+    }
+
+    .extend-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    :is(.stats-hero h1, .details-head h1, .calendar-heading h1) {
+        overflow-wrap: anywhere;
+    }
+
+    :is(.compact-item, .owner-facts div, .metric-list div, .role-row) {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .login-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .compact-stats {
+        justify-content: flex-start;
+    }
+
+    :is(.hero-actions, .cta-actions, .actions, .data-hero-actions) {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    :is(.hero-actions .btn, .cta-actions .btn, .actions .btn, .data-hero-actions .btn) {
+        width: 100%;
+    }
+
+    .profile-header-main {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .avatar-dropzone {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+
+    .avatar-preview {
+        width: 76px;
+        height: 76px;
+        border-radius: 18px;
+    }
+}
+
+@media (max-width: 420px) {
+    :is(.home, .sub-config-page) {
+        padding-inline: 10px;
+    }
+
+    :is(.hero, .cta, .config-hero, .config-section, .summary-panel, .profile-header, .panel, .modal.card) {
+        padding: 14px;
+        border-radius: 10px;
+    }
+
+    :is(.project-card, .member-card, .team-card, .task-card, .session-card, .sub-card, .data-card) {
+        padding: 14px;
+    }
+
+    :is(.owner-row, .analytics-row, .history-row) {
+        min-width: 560px;
+    }
+}

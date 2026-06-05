@@ -1,0 +1,341 @@
+﻿@page "/workplace/projects/{ProjectId:int}"
+@using steptreck.Domain.DTOs.ProjectDTOs
+@using Microsoft.AspNetCore.Components.Forms
+@inject steptreck.Web.ViewModel.ProjectsViewModel ProjectsVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page project-details-page">
+    <section class="section">
+        <ProjectSectionTabs ProjectId="ProjectId" Active="info" />
+
+        <div class="details-layout no-sidebar">
+            <div class="details-shell card">
+                @if (_loading)
+                {
+                    <div class="details-empty">Загружаем проект...</div>
+                }
+                else if (_project is null)
+                {
+                    <div class="details-empty">Проект не найден.</div>
+                }
+                else
+                {
+                    <div class="details-cover @(HasProjectBackground ? "has-bg" : "")" style="@ProjectBackgroundStyle">
+                        <InputFile id="project-details-bg"
+                                   class="cover-bg-input"
+                                   accept="image/png,image/jpeg,image/webp"
+                                   OnChange="UploadProjectBackgroundAsync" />
+                        <label class="cover-bg-upload" for="project-details-bg">
+                            <i class="bi bi-camera" aria-hidden="true"></i>
+                            <span>@(_uploadingBackground ? "Загрузка..." : "Сменить фон")</span>
+                        </label>
+                    </div>
+
+                    <div class="details-head">
+                        <div>
+                            <div class="details-kicker">Проект #@_project.Id</div>
+                            <h1>@_project.Name</h1>
+                            <p>@(!string.IsNullOrWhiteSpace(_project.Description) ? _project.Description : "Описание проекта не задано.")</p>
+                        </div>
+                        <div class="details-status @GetStatusClass(_project.IsArchived)">@GetStatusLabel(_project.IsArchived)</div>
+                    </div>
+
+                    <div class="details-meta">
+                        <div class="meta-item">
+                            <span>Создан</span>
+                            <strong>@FormatDate(_project.CreatedAt)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Обновлён</span>
+                            <strong>@FormatDate(_project.UpdatedAt)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Репозиторий</span>
+                            @if (!string.IsNullOrWhiteSpace(_project.GitUrl))
+                            {
+                                <strong><a class="muted-link" href="@_project.GitUrl" target="_blank" rel="noreferrer">Открыть Git</a></strong>
+                            }
+                            else
+                            {
+                                <strong>—</strong>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="details-actions">
+                        <button class="btn ghost" type="button" @onclick="OpenEditModal">
+                            Редактировать проект
+                        </button>
+                        <button class="btn ghost" type="button" @onclick="GoToAudit">
+                            Журнал аудита
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showEditModal)
+{
+    <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-folder2-open" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Редактировать проект</h2>
+                        <p>Обновите данные проекта и сохраните изменения.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseEditModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_edit" OnValidSubmit="UpdateProjectAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Название</label>
+                        <InputText class="input" @bind-Value="_edit.Name" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputTextArea class="input" @bind-Value="_edit.Description" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Git URL</label>
+                        <InputText class="input" @bind-Value="_edit.GitUrl" />
+                        <ValidationMessage For="@(() => _edit.GitUrl)" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Статус</label>
+                        <InputSelect class="input" @bind-Value="_edit.IsArchived">
+                            <option value="false">Активен</option>
+                            <option value="true">Архив</option>
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Сохранить</button>
+                    <button class="btn ghost" type="button" @onclick="CloseEditModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    private ProjectReadDto? _project;
+    private bool _loading = true;
+    private bool _showEditModal;
+    private bool _busy;
+    private bool _uploadingBackground;
+    private ProjectUpdateDto _edit = new();
+    private string? _alert;
+    private string _alertKind = "ok";
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase => Config["Api:BaseUrl"]?.TrimEnd('/') ?? "";
+
+    private bool HasProjectBackground => !string.IsNullOrWhiteSpace(_project?.CardBackgroundUrl);
+
+    private string? ProjectBackgroundStyle
+    {
+        get
+        {
+            var url = ResolveAssetUrl(_project?.CardBackgroundUrl);
+            return string.IsNullOrWhiteSpace(url)
+                ? null
+                : $"background-image: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.58)), url('{url}');";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        if (roleId == TeamLeadRoleId || roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        _loading = true;
+        var (result, project) = await ProjectsVm.GetByIdAsync(ProjectId);
+        _project = result.Success ? project : null;
+        _loading = false;
+    }
+
+    private void OpenEditModal()
+    {
+        if (_project is null)
+            return;
+
+        _edit = new ProjectUpdateDto
+        {
+            Name = _project.Name,
+            Description = _project.Description,
+            GitUrl = _project.GitUrl,
+            IsArchived = _project.IsArchived
+        };
+
+        _alert = null;
+        _alertKind = "ok";
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+    }
+
+    private async Task UpdateProjectAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var (result, project) = await ProjectsVm.UpdateAsync(ProjectId, _edit);
+            if (result.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Проект обновлен.";
+                if (project is not null)
+                    _project = project;
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось обновить проект.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task UploadProjectBackgroundAsync(InputFileChangeEventArgs e)
+    {
+        if (_project is null)
+            return;
+
+        var file = e.File;
+        if (!IsImageFile(file))
+        {
+            _alertKind = "err";
+            _alert = "Можно загрузить только jpeg, png или webp.";
+            return;
+        }
+
+        _uploadingBackground = true;
+        _alert = null;
+        try
+        {
+            await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            var (result, url) = await ProjectsVm.UploadBackgroundAsync(_project.Id, stream, file.Name, file.ContentType);
+            if (!result.Success || string.IsNullOrWhiteSpace(url))
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось загрузить фон проекта.";
+                return;
+            }
+
+            _project.CardBackgroundUrl = AddCacheBust(url);
+            _project.UpdatedAt = DateTime.UtcNow;
+            _alertKind = "ok";
+            _alert = "Фон проекта обновлён.";
+        }
+        catch (IOException)
+        {
+            _alertKind = "err";
+            _alert = "Файл слишком большой. Максимум 5 MB.";
+        }
+        finally
+        {
+            _uploadingBackground = false;
+        }
+    }
+
+    private static bool IsImageFile(IBrowserFile file)
+    {
+        var contentType = file.ContentType?.ToLowerInvariant() ?? "";
+        var extension = Path.GetExtension(file.Name)?.ToLowerInvariant();
+        return contentType is "image/jpeg" or "image/png" or "image/webp" ||
+               extension is ".jpg" or ".jpeg" or ".png" or ".webp";
+    }
+
+    private string? ResolveAssetUrl(string? rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return null;
+
+        var raw = rawUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        if (string.IsNullOrWhiteSpace(ApiBase) || !Uri.TryCreate(ApiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        return new Uri(baseUri, raw.TrimStart('/')).ToString();
+    }
+
+    private static string AddCacheBust(string url)
+    {
+        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{separator}v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+
+    private void GoTo(string url) => Nav.NavigateTo(url);
+
+    private static string GetStatusLabel(bool isArchived) => isArchived ? "Архив" : "Активен";
+    private static string GetStatusClass(bool isArchived) => isArchived ? "err" : "ok";
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+    }
+
+    void GoToTeams()
+        => GoTo($"/workplace/projects/{ProjectId}/teams");
+
+    void GoToDashboard()
+        => GoTo($"/workplace/projects/{ProjectId}/dashboard");
+
+    void GoToMembers()
+        => GoTo($"/workplace/projects/{ProjectId}/members");
+
+    void GoToFiles()
+        => GoTo($"/workplace/projects/{ProjectId}/files");
+
+    void GoToAudit()
+        => GoTo($"/workplace/projects/{ProjectId}/audit");
+}
+
+
+

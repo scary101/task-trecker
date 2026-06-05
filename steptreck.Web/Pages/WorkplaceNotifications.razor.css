@@ -1,0 +1,64 @@
+.notif-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.notif-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.notif-grid {
+    display: grid;
+    gap: 14px;
+}
+
+.notif-card {
+    padding: 16px;
+    display: grid;
+    gap: 10px;
+    border: 1px solid rgba(var(--text-muted-rgb), 0.12);
+    border-radius: 14px;
+    background: linear-gradient(145deg, var(--surface), var(--surface));
+    box-shadow: 0 16px 32px rgba(var(--bg-card-soft-rgb), 0.18);
+}
+
+.notif-card.unread {
+    border-color: rgba(99, 102, 241, 0.45);
+    background: linear-gradient(145deg, rgba(99, 102, 241, 0.18), var(--bg-card-soft));
+    box-shadow: 0 18px 36px rgba(99, 102, 241, 0.25);
+}
+
+.notif-card-text {
+    font-size: 14px;
+}
+
+.notif-card-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.notif-empty {
+    padding: 16px;
+    color: var(--text-secondary);
+}
+
+.btn-compact {
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.notif-page .section-head {
+    align-items: center;
+}
+
+.notif-actions .btn.primary {
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25);
+}
+
+

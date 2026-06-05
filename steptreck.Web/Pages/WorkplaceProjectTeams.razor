@@ -1,0 +1,374 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams"
+@using steptreck.Domain.DTOs.TeamDTOs
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page project-teams-page">
+    <section class="section">
+        <ProjectSectionTabs ProjectId="ProjectId" Active="teams" />
+
+        <div class="details-layout no-sidebar">
+            <div class="teams-shell">
+                <div class="section-head">
+                    <div>
+                        <h1>Команды проекта</h1>
+                        <p class="section-subtitle">Создайте команды для работы над проектом.</p>
+                    </div>
+                    <button class="btn primary" type="button" @onclick="OpenCreateModal">Создать команду</button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_alert))
+                {
+                    <div class="alert @(_alertKind)">@_alert</div>
+                }
+
+                @if (_loading)
+                {
+                    <div class="teams-empty card">Загружаем команды...</div>
+                }
+                else if (_teams.Count == 0)
+                {
+                    <div class="teams-empty card">В проекте пока нет команд.</div>
+                }
+                else
+                {
+                    <section class="teams-grid">
+                        @foreach (var t in _teams)
+                        {
+                            <article class="team-card card @(HasTeamBackground(t) ? "has-bg" : "")"
+                                     style="@GetTeamBackgroundStyle(t)"
+                                     role="button"
+                                     tabindex="0"
+                                     @onclick="() => OpenTeam(t.Id)">
+                                <div class="team-head">
+                                    <div>
+                                        <div class="team-title">@t.Name</div>
+                                        <div class="team-desc">@(!string.IsNullOrWhiteSpace(t.Description) ? t.Description : "Описание команды не задано.")</div>
+                                    </div>
+                                    <div class="team-id">#@t.Id</div>
+                                </div>
+
+                                <div class="team-lead">
+                                    <div class="lead-avatar">
+                                        @if (!string.IsNullOrWhiteSpace(GetLeadAvatar(t)))
+                                        {
+                                            <img src="@GetLeadAvatar(t)" alt="Avatar" />
+                                        }
+                                        else
+                                        {
+                                            <span>@BuildInitials(t.LeadFullName)</span>
+                                        }
+                                    </div>
+                                    <div class="lead-info">
+                                        <div class="lead-label">Руководитель</div>
+                                        <div class="lead-name">@(!string.IsNullOrWhiteSpace(t.LeadFullName) ? t.LeadFullName : "Не назначен")</div>
+                                    </div>
+                                </div>
+
+                                <div class="team-meta">
+                                    <span>Создана: @FormatDate(t.CreatedAt)</span>
+                                    <span>Обновлена: @FormatDate(t.UpdatedAt)</span>
+                                    <button class="btn ghost" type="button" disabled="@_busy" @onclick:stopPropagation="true" @onclick="() => OpenDeleteModal(t)">
+                                        Удалить
+                                    </button>
+                                </div>
+                            </article>
+                        }
+                    </section>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop" @onclick="CloseCreateModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Новая команда</h2>
+                        <p>Создайте команду. Руководителя назначите в карточке команды.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseCreateModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_create" OnValidSubmit="CreateTeamAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Название</label>
+                        <InputText class="input" @bind-Value="_create.Name" />
+                        <ValidationMessage For="@(() => _create.Name)" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputTextArea class="input" @bind-Value="_create.Description" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Создать</button>
+                    <button class="btn ghost" type="button" @onclick="CloseCreateModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="delete-team-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="delete-team-title">Удалить команду?</h2>
+                        <p>Вы уверены, что хотите удалить команду «@_deleteTeamName»? Задачи будут скрыты, а участники откреплены.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteModal" disabled="@_busy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteTeamAsync" disabled="@_busy">Удалить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    private List<TeamReadDto> _teams = new();
+    private bool _loading = true;
+    private bool _showCreateModal;
+    private bool _showDeleteModal;
+    private bool _busy;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private CreateTeamDto _create = new();
+    private int? _deleteTeamId;
+    private string? _deleteTeamName;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        if (roleId == TeamLeadRoleId || roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _teams = await TeamsVm.GetByProjectAsync(ProjectId);
+        _loading = false;
+    }
+
+    private void OpenCreateModal()
+    {
+        _create = new CreateTeamDto { ProjectId = ProjectId };
+        _alert = null;
+        _alertKind = "ok";
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+    }
+
+    private async Task CreateTeamAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var (result, team) = await TeamsVm.CreateTeamAsync(_create);
+            if (!result.Success || team is null)
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось создать команду.";
+                return;
+            }
+
+            _alertKind = "ok";
+            _alert = "Команда создана.";
+            _showCreateModal = false;
+            await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenTeam(int teamId)
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{teamId}");
+
+    private void OpenDeleteModal(TeamReadDto team)
+    {
+        _deleteTeamId = team.Id;
+        _deleteTeamName = team.Name;
+        _alert = null;
+        _alertKind = "ok";
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteTeamId = null;
+        _deleteTeamName = null;
+    }
+
+    private async Task DeleteTeamAsync()
+    {
+        if (!_deleteTeamId.HasValue)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var result = await TeamsVm.DeleteTeamAsync(_deleteTeamId.Value);
+            if (result.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Команда удалена.";
+                CloseDeleteModal();
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось удалить команду.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private bool HasTeamBackground(TeamReadDto team)
+        => !string.IsNullOrWhiteSpace(team.CardBackgroundUrl);
+
+    private string? GetTeamBackgroundStyle(TeamReadDto team)
+    {
+        var url = ResolveAssetUrl(team.CardBackgroundUrl);
+        return string.IsNullOrWhiteSpace(url)
+            ? null
+            : $"background-image: linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.60)), url('{url}');";
+    }
+
+    private string? GetLeadAvatar(TeamReadDto team)
+    {
+        var avatarUrl = team.LeadAvatarUrl;
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private string? ResolveAssetUrl(string? rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return null;
+
+        var raw = rawUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase) || !Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        return new Uri(baseUri, raw.TrimStart('/')).ToString();
+    }
+
+    private static string BuildInitials(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "ST";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}");
+
+    private void GoToTeams()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams");
+
+    private void GoToDashboard()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/dashboard");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/members");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/files");
+}
+
+
+

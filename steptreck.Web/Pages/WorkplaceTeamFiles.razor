@@ -1,0 +1,329 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/files"
+@using Microsoft.AspNetCore.Components.Forms
+@using steptreck.Domain.DTOs.TeamDTOs
+@inject steptreck.Web.ViewModel.TeamFilesViewModel FilesVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-files-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="files"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        <div class="details-layout no-sidebar">
+            <div class="files-shell">
+                <div class="section-head">
+                    <div>
+                        <h1>Файлы команды</h1>
+                        <p class="section-subtitle">Загружайте материалы для команды.</p>
+                    </div>
+                    <label class="btn primary file-upload">
+                        <InputFile OnChange="OnFileSelected" />
+                        Загрузить файл
+                    </label>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_alert))
+                {
+                    <div class="alert @(_alertKind)">@_alert</div>
+                }
+
+                @if (_loading)
+                {
+                    <div class="files-empty card">Загружаем файлы...</div>
+                }
+                else if (_files.Count == 0)
+                {
+                    <div class="files-empty card">Файлов пока нет.</div>
+                }
+                else
+                {
+                    <section class="files-list">
+                        @foreach (var f in _files)
+                        {
+                            <article class="file-card card">
+                                <div class="file-main">
+                                    <div class="file-name">@f.FileName</div>
+                                    <div class="file-meta">
+                                        <span>@FormatSize(f.SizeBytes)</span>
+                                        <span class="meta-dot"></span>
+                                        <span>@FormatDate(f.CreatedAt)</span>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <button class="btn ghost" type="button" disabled="@_busy" @onclick="() => DownloadAsync(f.Id)">
+                                        Скачать
+                                    </button>
+                                    <button class="btn ghost" type="button" disabled="@_busy" @onclick="() => OpenDeleteFileModal(f)">
+                                        Удалить
+                                    </button>
+                                </div>
+                            </article>
+                        }
+                    </section>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showDeleteFileModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteFileModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="delete-team-file-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="delete-team-file-title">Удалить файл?</h2>
+                        <p>Вы уверены, что хотите удалить файл «@_deleteFileName»? Это действие нельзя отменить.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteFileModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteFileModal" disabled="@_busy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteFileAsync" disabled="@_busy">Удалить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private List<TeamFileReadDto> _files = new();
+    private bool _loading = true;
+    private bool _roleReady;
+    private bool _busy;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private bool _showDeleteFileModal;
+    private int? _deleteFileId;
+    private string? _deleteFileName;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private bool _isOwner;
+    private const long MaxFileSizeBytes = 5 * 1024 * 1024;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int OwnerRoleId = 1;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _isOwner = roleId == OwnerRoleId;
+        if (_isOwner)
+        {
+            Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}", forceLoad: true);
+            return;
+        }
+
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _files = await FilesVm.GetFilesAsync(TeamId);
+        _loading = false;
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        if (_busy)
+            return;
+
+        var file = e.File;
+        if (file is null)
+            return;
+
+        if (file.Size > MaxFileSizeBytes)
+        {
+            _alertKind = "err";
+            _alert = "Файл больше 5 МБ.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        _alertKind = "ok";
+        try
+        {
+            await using var stream = file.OpenReadStream(MaxFileSizeBytes);
+            var (result, uploaded) = await FilesVm.UploadAsync(
+                TeamId,
+                stream,
+                file.Name,
+                file.ContentType);
+
+            if (result.Success && uploaded is not null)
+            {
+                _files.Insert(0, uploaded);
+                _alert = "Файл загружен.";
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось загрузить файл.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadAsync(int attachmentId)
+    {
+        if (_busy) return;
+
+        _busy = true;
+        _alert = null;
+        _alertKind = "ok";
+
+        try
+        {
+            var (result, file) = await FilesVm.DownloadAsync(attachmentId);
+            if (!result.Success || file is null)
+            {
+                _alertKind = "err";
+                _alert = "Не удалось скачать файл.";
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(file.Content);
+            await JS.InvokeVoidAsync("steptreckDownload.saveFile", file.FileName, file.ContentType, base64);
+        }
+        catch
+        {
+            _alertKind = "err";
+            _alert = "Ошибка при скачивании файла.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenDeleteFileModal(TeamFileReadDto file)
+    {
+        _deleteFileId = file.Id;
+        _deleteFileName = file.FileName;
+        _alert = null;
+        _alertKind = "ok";
+        _showDeleteFileModal = true;
+    }
+
+    private void CloseDeleteFileModal()
+    {
+        _showDeleteFileModal = false;
+        _deleteFileId = null;
+        _deleteFileName = null;
+    }
+
+    private async Task DeleteFileAsync()
+    {
+        if (_busy || !_deleteFileId.HasValue)
+            return;
+
+        _busy = true;
+        _alert = null;
+        _alertKind = "ok";
+        try
+        {
+            var attachmentId = _deleteFileId.Value;
+            var res = await FilesVm.DeleteAsync(attachmentId);
+            if (res.Success)
+            {
+                _files.RemoveAll(f => f.Id == attachmentId);
+                _alert = "Файл удалён.";
+                CloseDeleteFileModal();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = "Не удалось удалить файл.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FormatDate(DateTime? value)
+        => value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string FormatSize(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        double kb = bytes / 1024.0;
+        if (kb < 1024) return $"{kb:0.#} KB";
+        double mb = kb / 1024.0;
+        if (mb < 1024) return $"{mb:0.#} MB";
+        double gb = mb / 1024.0;
+        return $"{gb:0.#} GB";
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+}
+
+
+

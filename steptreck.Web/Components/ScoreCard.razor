@@ -1,0 +1,270 @@
+@using System
+@using System.Globalization
+@using System.Linq
+@using steptreck.Domain.DTOs.MemberDTOs
+
+<div class="score-card @(Compact ? "compact" : "") @(OnClick.HasDelegate ? "clickable" : "") @GetTrustClass()"
+     style="--trust:@TrustPercent%;"
+     @onclick="HandleClick"
+     @onkeydown="HandleKeyDown"
+     role="@(OnClick.HasDelegate ? "button" : null)"
+     tabindex="@(OnClick.HasDelegate ? "0" : null)">
+    <div class="score-card-head">
+        <div>
+            @if (!string.IsNullOrWhiteSpace(Title))
+            {
+                <div class="score-kicker">@Title</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Name))
+            {
+                <div class="score-name">@Name</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <div class="score-subtitle">@Subtitle</div>
+            }
+        </div>
+        <span class="score-badge @GetBadgeClass()">@GetTrustLabel()</span>
+    </div>
+
+    <div class="score-hero">
+        <div class="score-value">@FormatScore(Trust)</div>
+        <div class="score-unit">/100</div>
+    </div>
+
+    <div class="score-meter" aria-hidden="true">
+        <div class="score-meter-fill"></div>
+        <div class="score-meter-marker" style="left: var(--trust);">
+            <span>@FormatScore(Trust)</span>
+        </div>
+    </div>
+
+    <div class="score-kpis">
+        <div class="score-kpi">
+            <span>Выполнено</span>
+            <strong>@CompletedCount</strong>
+        </div>
+        <div class="score-kpi">
+            <span>Пропущено</span>
+            <strong>@MissedCount</strong>
+        </div>
+        <div class="score-kpi">
+            <span>% пропусков</span>
+            <strong>@FormatPercent(MissRate)</strong>
+        </div>
+    </div>
+
+    <div class="score-hint">Trust снижается за пропущенные High/Critical задачи</div>
+
+    @if (PriorityStats is { Count: > 0 })
+    {
+        <button class="score-details-toggle"
+                type="button"
+                @onclick="ToggleDetails"
+                @onclick:stopPropagation="true"
+                aria-expanded="@_detailsOpen">
+            <span>@(_detailsOpen ? "Скрыть детализацию" : "Показать детализацию")</span>
+            <i class="bi @(_detailsOpen ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></i>
+        </button>
+
+        @if (_detailsOpen)
+        {
+            <div class="score-details">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Критичность задачи</th>
+                            <th>Выполнено задач</th>
+                            <th>Пропущено задач</th>
+                            <th>Всего</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in PriorityStats)
+                        {
+                            <tr>
+                                <td>@row.PriorityTitle</td>
+                                <td>@row.CompletedCount</td>
+                                <td>@row.MissedCount</td>
+                                <td>@row.TotalCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+
+    @if (ShowChart && Logs is { Count: > 0 })
+    {
+        <div class="score-chart">
+            @if (Delta7Days.HasValue)
+            {
+                <div class="score-delta @(Delta7Days.Value >= 0 ? "up" : "down")" title="Изменение за последние 7 дней">
+                    <span>@FormatDeltaValue(Delta7Days.Value)</span>
+                </div>
+            }
+            <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="@($"{_chartId}-line")" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#22d3ee" />
+                        <stop offset="50%" stop-color="#818cf8" />
+                        <stop offset="100%" stop-color="#f472b6" />
+                    </linearGradient>
+                    <linearGradient id="@($"{_chartId}-area")" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="rgba(129, 140, 248, 0.35)" />
+                        <stop offset="100%" stop-color="rgba(129, 140, 248, 0)" />
+                    </linearGradient>
+                </defs>
+                <polyline class="score-area" points="@ChartAreaPoints" fill="@($"url(#{_chartId}-area)")" />
+                <polyline class="score-line" points="@ChartLinePoints" stroke="@($"url(#{_chartId}-line)")" />
+            </svg>
+            <div class="score-chart-label">Начисления (последние @ChartCount)</div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Name { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public decimal Trust { get; set; }
+    [Parameter] public decimal MissRate { get; set; }
+    [Parameter] public int CompletedCount { get; set; }
+    [Parameter] public int MissedCount { get; set; }
+    [Parameter] public string? TrustLevel { get; set; }
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public IReadOnlyList<ScoreLogDto>? Logs { get; set; }
+    [Parameter] public IReadOnlyList<ScorePriorityStatDto>? PriorityStats { get; set; }
+    [Parameter] public bool ShowChart { get; set; } = true;
+
+    private readonly string _chartId = $"score-{Guid.NewGuid():N}";
+    private bool _detailsOpen;
+
+    private string TrustPercent
+        => Math.Clamp((double)Trust, 0, 100)
+            .ToString("0.##", CultureInfo.InvariantCulture);
+
+    private string GetBadgeClass()
+    {
+        var label = (TrustLevel ?? string.Empty).Trim();
+        return label switch
+        {
+            "Надёжный" => "good",
+            "Под наблюдением" => "watch",
+            "Риск" => "risk",
+            _ => "neutral"
+        };
+    }
+
+    private string GetTrustLabel()
+        => string.IsNullOrWhiteSpace(TrustLevel) ? "—" : TrustLevel!;
+
+    private string GetTrustClass()
+        => Trust < 50 ? "trust-low" : Trust >= 80 ? "trust-high" : "trust-mid";
+
+    private static string FormatScore(decimal value)
+        => Math.Round(value).ToString("0", CultureInfo.InvariantCulture);
+
+    private static string FormatPercent(decimal value)
+        => value.ToString("0.##") + "%";
+
+    private decimal? Delta7Days
+    {
+        get
+        {
+            if (Logs is null || Logs.Count == 0)
+                return null;
+
+            var since = DateTime.UtcNow.AddDays(-7);
+            var sum = Logs
+                .Where(x => x.CreatedAtUtc >= since)
+                .Sum(x => x.IsIncrease ? x.Delta : -x.Delta);
+
+            return sum == 0 ? 0 : Math.Round(sum, 2);
+        }
+    }
+
+    private static string FormatDeltaValue(decimal value)
+    {
+        var sign = value >= 0 ? "▲" : "▼";
+        var prefix = value >= 0 ? "+" : "-";
+        var abs = Math.Abs(value);
+        return $"{sign} {prefix}{abs:0.##}";
+    }
+
+    private int ChartCount => Math.Min(Logs?.Count ?? 0, 20);
+
+    private string ChartLinePoints => BuildChartPoints(isArea: false);
+    private string ChartAreaPoints => BuildChartPoints(isArea: true);
+
+    private string BuildChartPoints(bool isArea)
+    {
+        if (Logs is null || Logs.Count == 0)
+            return string.Empty;
+
+        var ordered = Logs
+            .OrderBy(x => x.CreatedAtUtc)
+            .TakeLast(ChartCount)
+            .ToList();
+
+        if (ordered.Count == 0)
+            return string.Empty;
+
+        var values = ordered
+            .Select(x => x.IsIncrease ? x.Delta : -x.Delta)
+            .Select(x => (double)x)
+            .ToList();
+
+        var min = values.Min();
+        var max = values.Max();
+        if (Math.Abs(max - min) < 0.001)
+        {
+            min -= 1;
+            max += 1;
+        }
+
+        var points = new List<string>();
+        var count = values.Count;
+        for (var i = 0; i < count; i++)
+        {
+            var x = count == 1 ? 50 : i * 100.0 / (count - 1);
+            var normalized = (values[i] - min) / (max - min);
+            var y = 34 - normalized * 24;
+            var point = string.Format(CultureInfo.InvariantCulture, "{0:0.##},{1:0.##}", x, y);
+            points.Add(point);
+        }
+
+        if (!isArea)
+            return string.Join(" ", points);
+
+        var area = new List<string>();
+        area.Add("0,36");
+        area.AddRange(points);
+        area.Add("100,36");
+        return string.Join(" ", area);
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnClick.HasDelegate)
+            await OnClick.InvokeAsync();
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (!OnClick.HasDelegate)
+            return;
+
+        if (e.Key is "Enter" or " ")
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
+
+    private void ToggleDetails()
+    {
+        _detailsOpen = !_detailsOpen;
+    }
+}

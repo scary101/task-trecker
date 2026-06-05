@@ -1,0 +1,103 @@
+:host[b-hzejnm6nbp] {
+    display: block;
+}
+
+.login-page[b-hzejnm6nbp] {
+    min-height: calc(100vh - 160px);
+    display: grid;
+    place-items: center;
+    padding: 40px 20px 60px;
+}
+
+.login-card[b-hzejnm6nbp] {
+    width: min(520px, 100%);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    background: linear-gradient(135deg, var(--surface), var(--bg-secondary));
+    border: 1px solid var(--border);
+    box-shadow: 0 28px 60px rgba(var(--text-primary-rgb), 0.18);
+}
+
+:root[data-theme="dark"] .login-card[b-hzejnm6nbp] {
+    background: linear-gradient(135deg, rgba(var(--bg-main-rgb), 0.92), rgba(8, 12, 22, 0.95));
+    border-color: rgba(var(--text-muted-rgb), 0.2);
+    box-shadow: 0 28px 60px rgba(var(--bg-card-soft-rgb), 0.45);
+}
+
+.login-head[b-hzejnm6nbp] {
+    display: grid;
+    gap: 6px;
+}
+
+.login-head h1[b-hzejnm6nbp] {
+    margin: 6px 0 0;
+    font-size: 26px;
+}
+
+.login-head p[b-hzejnm6nbp] {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.form-grid[b-hzejnm6nbp] {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+}
+
+.actions[b-hzejnm6nbp] {
+    display: flex;
+    gap: 12px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+}
+
+.method-actions[b-hzejnm6nbp] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.notify-wait[b-hzejnm6nbp] {
+    display: grid;
+    gap: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+}
+
+.notify-title[b-hzejnm6nbp] {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.notify-text[b-hzejnm6nbp] {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.divider[b-hzejnm6nbp] {
+    height: 1px;
+    background: var(--border);
+    margin: 8px 0;
+}
+
+.login-footer[b-hzejnm6nbp] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.cooldown[b-hzejnm6nbp] {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+

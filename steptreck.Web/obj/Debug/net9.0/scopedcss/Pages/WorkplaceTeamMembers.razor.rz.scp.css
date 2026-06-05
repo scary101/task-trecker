@@ -1,0 +1,110 @@
+.team-members-page[b-541ui19mnw] {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.members-shell[b-541ui19mnw] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.section-head[b-541ui19mnw] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.members-grid[b-541ui19mnw] {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.members-empty[b-541ui19mnw] {
+    padding: 16px;
+    color: var(--text-secondary);
+}
+
+.member-card[b-541ui19mnw] {
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-card:hover[b-541ui19mnw] {
+    transform: translateY(-2px);
+    border-color: rgba(var(--primary-rgb), 0.35);
+    box-shadow: 0 16px 30px rgba(var(--bg-card-soft-rgb), 0.25);
+}
+
+.member-head[b-541ui19mnw] {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+}
+
+.member-avatar[b-541ui19mnw] {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: var(--text-secondary);
+    overflow: hidden;
+}
+
+.member-avatar img[b-541ui19mnw] {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-info[b-541ui19mnw] {
+    display: grid;
+    gap: 6px;
+}
+
+.member-name[b-541ui19mnw] {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.member-role[b-541ui19mnw] {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.member-footer[b-541ui19mnw] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.member-actions[b-541ui19mnw] {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.member-id[b-541ui19mnw] {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.member-open[b-541ui19mnw] {
+    color: var(--text-secondary);
+}
+

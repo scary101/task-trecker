@@ -1,0 +1,28 @@
+﻿.invite-accept {
+    display: grid;
+    place-items: center;
+}
+
+.invite-card {
+    width: min(520px, 100%);
+    padding: 24px;
+    display: grid;
+    gap: 16px;
+}
+
+.invite-head h1 {
+    margin: 0 0 6px;
+    font-size: 24px;
+}
+
+.invite-head p {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+

@@ -1,0 +1,61 @@
+@inject NavigationManager Nav
+
+<nav class="team-tabs" aria-label="Разделы команды">
+    <button class="@TabClass("info")" type="button" @onclick="@(() => NavigateTo("info"))">Команда</button>
+    <button class="@TabClass("dashboard")" type="button" @onclick="@(() => NavigateTo("dashboard"))">Дашборд</button>
+    <button class="@TabClass("members")" type="button" @onclick="@(() => NavigateTo("members"))">Участники</button>
+    <button class="@TabClass("stats")" type="button" @onclick="@(() => NavigateTo("stats"))">Статистика</button>
+    <button class="@TabClass("calendar")" type="button" @onclick="@(() => NavigateTo("calendar"))">Календарь</button>
+    @if (ShowTaskLinks)
+    {
+        <button class="@TabClass("tasks")" type="button" @onclick="@(() => NavigateTo("tasks"))">Задачи</button>
+    }
+    <button class="@TabClass("audit")" type="button" @onclick="@(() => NavigateTo("audit"))">Журнал</button>
+    @if (ShowWorkspaceLinks)
+    {
+        <button class="@TabClass("files")" type="button" @onclick="@(() => NavigateTo("files"))">Файлы</button>
+        <button class="@TabClass("chat")" type="button" @onclick="@(() => NavigateTo("chat"))">Чат</button>
+    }
+</nav>
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    [Parameter]
+    public int TeamId { get; set; }
+
+    [Parameter]
+    public string Active { get; set; } = "info";
+
+    [Parameter]
+    public bool ShowWorkspaceLinks { get; set; } = true;
+
+    [Parameter]
+    public bool ShowTaskLinks { get; set; } = true;
+
+    private string BasePath => $"/workplace/projects/{ProjectId}/teams/{TeamId}";
+
+    private string TabClass(string tab)
+        => string.Equals(Active, tab, StringComparison.OrdinalIgnoreCase)
+            ? "team-tab active"
+            : "team-tab";
+
+    private void NavigateTo(string tab)
+    {
+        var url = tab switch
+        {
+            "dashboard" => $"{BasePath}/dashboard",
+            "members" => $"{BasePath}/members",
+            "stats" => $"{BasePath}/stats",
+            "calendar" => $"{BasePath}/calendar",
+            "tasks" => $"{BasePath}/tasks",
+            "audit" => $"{BasePath}/audit",
+            "files" => $"{BasePath}/files",
+            "chat" => $"{BasePath}/chat",
+            _ => BasePath
+        };
+
+        Nav.NavigateTo(url);
+    }
+}

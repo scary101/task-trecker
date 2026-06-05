@@ -1,0 +1,66 @@
+@page "/workplace/members/{MemberId:int}/audit"
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page member-audit-page">
+    <section class="section">
+        <div class="actions">
+            <button class="btn ghost" type="button" @onclick="GoToProfile">К профилю</button>
+            @if (!_isOwner)
+            {
+                <button class="btn ghost" type="button" @onclick="GoToTasks">Активные задачи</button>
+                <button class="btn ghost" type="button" @onclick="GoToTaskHistory">История задач</button>
+            }
+        </div>
+
+        <AuditLogPanel Scope="member"
+                       MemberId="MemberId"
+                       Title="Журнал участника"
+                       Subtitle="Действия участника и изменения его профиля." />
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public int MemberId { get; set; }
+
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int OwnerRoleId = 1;
+    private bool _isOwner;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        _isOwner = roleId == OwnerRoleId;
+
+        if (roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+        }
+    }
+
+    private void GoToProfile()
+        => Nav.NavigateTo($"/workplace/members/{MemberId}");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/members/{MemberId}/tasks");
+
+    private void GoToTaskHistory()
+        => Nav.NavigateTo($"/workplace/members/{MemberId}/tasks/history");
+}

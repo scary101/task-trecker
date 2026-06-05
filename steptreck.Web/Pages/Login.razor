@@ -1,0 +1,478 @@
+﻿@page "/login"
+@using steptreck.Domain.DTOs.AuthDTOs
+@inject steptreck.Web.ViewModel.AuthViewModel AuthVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject steptreck.Web.Services.IInviteTokenStore InviteTokenStore
+@inject IJSRuntime JS
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@implements IDisposable
+
+<PageTitle>Авторизация — StepTreck</PageTitle>
+
+<main class="page login-page">
+    <section class="login-card card">
+        <div class="login-head">
+            <div class="brand" @onclick="@(() => Nav.NavigateTo("/"))" role="button" tabindex="0">
+                <img class="brand-logo" src="/icon.png" alt="StepTreck" />\n                <span>StepTreck</span>
+            </div>
+            <h1>Войти в аккаунт</h1>
+            <p>Один вход для всех участников команды.</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert @(_alertKind)">
+                @_alert
+            </div>
+        }
+
+        @if (_step == LoginStep.Credentials)
+        {
+            <EditForm Model="_login">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label">Email</label>
+                        <InputText class="input" @bind-Value="_login.Email" placeholder="name@company.com" />
+                    </div>
+                    <div class="field">
+                        <label class="label">Пароль</label>
+                        <InputText class="input" type="password" @bind-Value="_login.Password" placeholder="••••••••" />
+                    </div>
+                </div>
+                <TurnstileCaptcha @ref="_captcha"
+                                  SiteKey="@TurnstileSiteKey"
+                                  TokenChanged="@(token => _login.CaptchaToken = token)" />
+                <div class="method-actions">
+                    <button class="btn primary" type="button" disabled="@CanSubmitLogin" @onclick="SendEmailCodeAsync">Войти по почте</button>
+                    <button class="btn ghost" type="button" disabled="@CanSubmitLogin" @onclick="StartNotificationLoginAsync">По уведомлению</button>
+                </div>
+                <div class="actions">
+                    <a class="btn ghost" href="/reset-password/request">Забыли пароль?</a>
+                </div>
+                @if (_cooldownRemaining > 0)
+                {
+                    <div class="cooldown">Повторный запрос можно сделать через @_cooldownLabel</div>
+                }
+            </EditForm>
+        }
+        else if (_step == LoginStep.Code)
+        {
+            <EditForm Model="_verify" OnValidSubmit="VerifyAsync">
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Код подтверждения</label>
+                        <InputText class="input" @bind-Value="_verify.Code" placeholder="Введите код из письма" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Войти</button>
+                    <button class="btn ghost" type="button" disabled="@_busy" @onclick="BackToCredentials">Назад</button>
+                </div>
+            </EditForm>
+        }
+        else if (_step == LoginStep.NotificationWait)
+        {
+            <div class="notify-wait">
+                <div class="notify-title">Ожидаем подтверждение</div>
+                <div class="notify-text">Откройте уведомление на телефоне и подтвердите вход.</div>
+                @if (_notificationRemaining > 0)
+                {
+                    <div class="cooldown">Запрос активен еще @_notificationLabel</div>
+                }
+            </div>
+            <div class="actions">
+                <button class="btn ghost" type="button" @onclick="BackToCredentials">Выбрать другой способ</button>
+            </div>
+        }
+
+        <div class="login-footer">
+            <span>Нет аккаунта?</span>
+            <a class="muted-link" href="/register">Начать пользоваться</a>
+        </div>
+    </section>
+</main>
+
+@code {
+    private const string LoginCooldownKey = "loginCodeCooldownUntil";
+    private enum LoginStep
+    {
+        Credentials,
+        Code,
+        NotificationWait
+    }
+
+    private LoginDTO _login = new()
+    {
+        Email = "",
+        Password = ""
+    };
+
+    private VerifyCodeDto _verify = new();
+    private bool _busy;
+    private string? _alert;
+    private string _alertKind = "err";
+    private string? _returnUrl;
+    private LoginStep _step = LoginStep.Credentials;
+    private int _cooldownRemaining;
+    private int _notificationRemaining;
+    private System.Timers.Timer? _cooldownTimer;
+    private System.Timers.Timer? _notificationTimer;
+    private CancellationTokenSource? _notificationCts;
+    private Guid? _activeNotificationChallengeId;
+    private TurnstileCaptcha? _captcha;
+
+    private string? TurnstileSiteKey => Configuration["Turnstile:SiteKey"] ?? Configuration["Turnstile:SecretKey"];
+    private string _cooldownLabel => TimeSpan.FromSeconds(_cooldownRemaining).ToString("mm\\:ss");
+    private string _notificationLabel => TimeSpan.FromSeconds(_notificationRemaining).ToString("mm\\:ss");
+    private bool CanSubmitLogin => _busy || _cooldownRemaining > 0 || string.IsNullOrWhiteSpace(_login.CaptchaToken);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCooldownAsync();
+        _returnUrl = GetQueryParam("returnUrl");
+        var token = await JwtService.GetTokenAsync();
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            try
+            {
+                var pendingToken = await InviteTokenStore.GetTokenAsync();
+                if (!string.IsNullOrWhiteSpace(pendingToken))
+                {
+                    await InviteTokenStore.ClearTokenAsync();
+                    Nav.NavigateTo($"/invite/accept?token={Uri.EscapeDataString(pendingToken)}", forceLoad: true);
+                    return;
+                }
+
+                if (!string.IsNullOrWhiteSpace(_returnUrl))
+                {
+                    Nav.NavigateTo(_returnUrl, forceLoad: true);
+                    return;
+                }
+
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private async Task LoadCooldownAsync()
+    {
+        try
+        {
+            var untilRaw = await JS.InvokeAsync<string>("localStorage.getItem", LoginCooldownKey);
+            if (long.TryParse(untilRaw, out var untilUnix))
+            {
+                var until = DateTimeOffset.FromUnixTimeSeconds(untilUnix);
+                var remaining = (int)Math.Ceiling((until - DateTimeOffset.UtcNow).TotalSeconds);
+                if (remaining > 0)
+                {
+                    StartCooldown(remaining);
+                    return;
+                }
+            }
+            await JS.InvokeVoidAsync("localStorage.removeItem", LoginCooldownKey);
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task SendEmailCodeAsync()
+    {
+        if (_cooldownRemaining > 0)
+            return;
+
+        _alert = null;
+        _alertKind = "err";
+
+        if (string.IsNullOrWhiteSpace(_login.CaptchaToken))
+        {
+            _alert = "Подтвердите, что вы не робот.";
+            return;
+        }
+
+        _busy = true;
+        var shouldResetCaptcha = true;
+        try
+        {
+            var res = await AuthVm.SendLoginCodeAsync(_login);
+            if (res.Success)
+            {
+                _step = LoginStep.Code;
+                _verify.Email = _login.Email;
+                _alertKind = "ok";
+                _alert = res.Message ?? "Код отправлен на почту.";
+                await StartCooldownAsync(60);
+                shouldResetCaptcha = false;
+            }
+            else
+            {
+                _alert = res.Error ?? "Ошибка авторизации.";
+            }
+        }
+        finally
+        {
+            if (shouldResetCaptcha && _captcha is not null)
+                await _captcha.ResetAsync();
+
+            _busy = false;
+        }
+    }
+
+    private async Task StartNotificationLoginAsync()
+    {
+        _alert = null;
+        _alertKind = "err";
+
+        if (string.IsNullOrWhiteSpace(_login.CaptchaToken))
+        {
+            _alert = "Подтвердите, что вы не робот.";
+            return;
+        }
+
+        _busy = true;
+        var shouldResetCaptcha = true;
+        try
+        {
+            var res = await AuthVm.StartLoginNotificationAsync(_login);
+            if (!res.Success || res.ChallengeId is null)
+            {
+                _alert = res.Error ?? "Не удалось отправить уведомление.";
+                return;
+            }
+
+            _step = LoginStep.NotificationWait;
+            _alertKind = "ok";
+            _alert = res.Message ?? "Подтвердите вход на телефоне.";
+            StartNotificationCountdown(res.ExpiresInSeconds > 0 ? res.ExpiresInSeconds : 120);
+
+            _notificationCts?.Cancel();
+            _notificationCts?.Dispose();
+            _notificationCts = new CancellationTokenSource(TimeSpan.FromSeconds(res.ExpiresInSeconds > 0 ? res.ExpiresInSeconds : 120));
+
+            _activeNotificationChallengeId = res.ChallengeId.Value;
+            _ = WaitForNotificationApprovalAsync(res.ChallengeId.Value, _notificationCts.Token);
+            shouldResetCaptcha = false;
+        }
+        finally
+        {
+            if (shouldResetCaptcha && _captcha is not null)
+                await _captcha.ResetAsync();
+
+            _busy = false;
+        }
+    }
+
+    private async Task WaitForNotificationApprovalAsync(Guid challengeId, CancellationToken ct)
+    {
+        try
+        {
+            var res = await AuthVm.WaitForLoginApprovalAsync(challengeId, ct);
+            if (res.Success)
+            {
+                await InvokeAsync(async () =>
+                {
+                    if (_step == LoginStep.NotificationWait && _activeNotificationChallengeId == challengeId)
+                    {
+                        await ContinueAfterLoginAsync();
+                    }
+                });
+                return;
+            }
+
+            await InvokeAsync(() =>
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Подтверждение входа не удалось.";
+                StateHasChanged();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+            await InvokeAsync(() =>
+            {
+                if (_step == LoginStep.NotificationWait)
+                {
+                    _alertKind = "err";
+                    _alert = "Время подтверждения истекло.";
+                    StateHasChanged();
+                }
+            });
+        }
+        catch
+        {
+            await InvokeAsync(() =>
+            {
+                _alertKind = "err";
+                _alert = "Не удалось дождаться подтверждения.";
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async Task StartCooldownAsync(int seconds)
+    {
+        if (seconds <= 0)
+            return;
+
+        var until = DateTimeOffset.UtcNow.AddSeconds(seconds).ToUnixTimeSeconds();
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", LoginCooldownKey, until.ToString());
+        }
+        catch
+        {
+        }
+        StartCooldown(seconds);
+    }
+
+    private void StartCooldown(int seconds)
+    {
+        if (seconds <= 0)
+            return;
+
+        _cooldownRemaining = seconds;
+        _cooldownTimer?.Stop();
+        _cooldownTimer?.Dispose();
+        _cooldownTimer = new System.Timers.Timer(1000);
+        _cooldownTimer.Elapsed += async (_, __) =>
+        {
+            if (_cooldownRemaining <= 0)
+            {
+                _cooldownTimer?.Stop();
+                return;
+            }
+
+            _cooldownRemaining--;
+            if (_cooldownRemaining <= 0)
+            {
+                _cooldownRemaining = 0;
+                _cooldownTimer?.Stop();
+                try
+                {
+                    await JS.InvokeVoidAsync("localStorage.removeItem", LoginCooldownKey);
+                }
+                catch
+                {
+                }
+            }
+            _ = InvokeAsync(StateHasChanged);
+        };
+        _cooldownTimer.AutoReset = true;
+        _cooldownTimer.Start();
+    }
+
+    private void StartNotificationCountdown(int seconds)
+    {
+        _notificationRemaining = seconds;
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+        _notificationTimer = new System.Timers.Timer(1000);
+        _notificationTimer.Elapsed += (_, __) =>
+        {
+            if (_notificationRemaining <= 0)
+            {
+                _notificationTimer?.Stop();
+                return;
+            }
+
+            _notificationRemaining--;
+            if (_notificationRemaining <= 0)
+            {
+                _notificationRemaining = 0;
+                _notificationTimer?.Stop();
+            }
+
+            _ = InvokeAsync(StateHasChanged);
+        };
+        _notificationTimer.AutoReset = true;
+        _notificationTimer.Start();
+    }
+
+    private async Task VerifyAsync()
+    {
+        _alert = null;
+        _alertKind = "err";
+        _busy = true;
+        try
+        {
+            var res = await AuthVm.VerifyCodeAsync(_verify);
+            if (res.Success)
+            {
+                await ContinueAfterLoginAsync();
+                return;
+            }
+            else
+            {
+                _alert = res.Error ?? "Неверный код.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ContinueAfterLoginAsync()
+    {
+        var pendingToken = await InviteTokenStore.GetTokenAsync();
+        if (!string.IsNullOrWhiteSpace(pendingToken))
+        {
+            await InviteTokenStore.ClearTokenAsync();
+            Nav.NavigateTo($"/invite/accept?token={Uri.EscapeDataString(pendingToken)}", forceLoad: true);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_returnUrl))
+        {
+            Nav.NavigateTo(_returnUrl, forceLoad: true);
+            return;
+        }
+
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private void BackToCredentials()
+    {
+        _step = LoginStep.Credentials;
+        _notificationCts?.Cancel();
+        _notificationCts?.Dispose();
+        _notificationCts = null;
+        _activeNotificationChallengeId = null;
+        _notificationTimer?.Stop();
+        _notificationRemaining = 0;
+    }
+
+    private string? GetQueryParam(string key)
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = uri.Query;
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length == 2 && string.Equals(kv[0], key, StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(kv[1]);
+        }
+
+        return null;
+    }
+
+    public void Dispose()
+    {
+        _notificationCts?.Cancel();
+        _notificationCts?.Dispose();
+        _activeNotificationChallengeId = null;
+        _cooldownTimer?.Stop();
+        _cooldownTimer?.Dispose();
+        _notificationTimer?.Stop();
+        _notificationTimer?.Dispose();
+    }
+
+}
+

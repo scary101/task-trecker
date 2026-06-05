@@ -1,0 +1,507 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/members"
+@using steptreck.Domain.DTOs.TeamDTOs.MemberDTOs
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-members-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="members"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        <div class="details-layout no-sidebar">
+            <div class="members-shell">
+                <div class="section-head">
+                    <div>
+                        <h1>Участники команды</h1>
+                        <p class="section-subtitle">Список участников, закрепленных за командой.</p>
+                    </div>
+                    @if (!_isOwner)
+                    {
+                        <button class="btn primary" type="button" @onclick="OpenAddModal">Добавить участника</button>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_alert))
+                {
+                    <div class="alert @(_alertKind)">@_alert</div>
+                }
+
+                @if (_loading)
+                {
+                    <div class="members-empty card">Загружаем участников...</div>
+                }
+                else if (_members.Count == 0)
+                {
+                    <div class="members-empty card">В команде пока нет участников.</div>
+                }
+                else
+                {
+                    <section class="members-grid">
+                        @foreach (var m in _members)
+                        {
+                            <article class="member-card card" role="button" tabindex="0" @onclick="() => OpenMember(m.MemberId)">
+                                <div class="member-head">
+                                    <div class="member-avatar">
+                                        @if (!string.IsNullOrWhiteSpace(GetAvatarUrl(m)))
+                                        {
+                                            <img src="@GetAvatarUrl(m)" alt="Avatar" />
+                                        }
+                                        else
+                                        {
+                                            <span>@BuildInitials(m.FullName)</span>
+                                        }
+                                    </div>
+                                    <div class="member-info">
+                                        <div class="member-name">@m.FullName</div>
+                                        <div class="member-role">@GetRoleLabel(m.RoleName)</div>
+                                        <div class="member-role">@(!string.IsNullOrWhiteSpace(m.TeamRole) ? m.TeamRole : "Участник")</div>
+                                    </div>
+                                </div>
+                                <div class="member-footer">
+                                    <span class="member-id">#@m.MemberId</span>
+                                    <div class="member-actions">
+                                        @if (!_isOwner)
+                                        {
+                                            <button class="btn ghost" type="button" @onclick:stopPropagation="true" @onclick="() => OpenRoleModal(m)">Роль</button>
+                                            <button class="btn ghost" type="button" disabled="@_busy" @onclick:stopPropagation="true" @onclick="() => OpenDeleteModal(m)">Открепить</button>
+                                        }
+                                        <span class="member-open">Открыть профиль</span>
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    </section>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showAddModal)
+{
+    <div class="modal-backdrop" @onclick="CloseAddModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-person-plus" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Добавить участника</h2>
+                        <p>Выберите сотрудника без команды и задайте роль в команде.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseAddModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_addModel" OnValidSubmit="AddMemberAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Сотрудник</label>
+                        <InputSelect class="input" @bind-Value="_addModel.MemberId">
+                            <option value="0">Выберите сотрудника</option>
+                            @foreach (var m in _freeMembers)
+                            {
+                                <option value="@m.Id">@m.FullName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Роль в команде</label>
+                        <InputText class="input" @bind-Value="_addModel.TeamRole" placeholder="Например, Дизайнер" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Добавить</button>
+                    <button class="btn ghost" type="button" @onclick="CloseAddModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_showRoleModal)
+{
+    <div class="modal-backdrop" @onclick="CloseRoleModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-person-badge" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Обновить роль</h2>
+                        <p>Измените роль участника в команде.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseRoleModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_roleModel" OnValidSubmit="UpdateRoleAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Роль в команде</label>
+                        <InputText class="input" @bind-Value="_roleModel.RoleName" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Сохранить</button>
+                    <button class="btn ghost" type="button" @onclick="CloseRoleModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_showDeleteModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="detach-member-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="detach-member-title">Открепить участника?</h2>
+                        <p>Вы уверены, что хотите открепить «@_deleteMemberName» от команды? Его задачи в скрытых командах не будут отображаться.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteModal" disabled="@_busy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteMemberAsync" disabled="@_busy">Открепить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    [Parameter]
+    public int TeamId { get; set; }
+
+    private List<TeamMemberDto> _members = new();
+    private List<steptreck.Domain.DTOs.MemberDTOs.MemberDto> _freeMembers = new();
+    private bool _loading = true;
+    private bool _roleReady;
+    private bool _showAddModal;
+    private bool _showRoleModal;
+    private bool _showDeleteModal;
+    private bool _busy;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private int? _deleteMemberId;
+    private string? _deleteMemberName;
+    private steptreck.Domain.DTOs.TeamDTOs.MemberDTOs.CreateMebmerProjectDto _addModel = new();
+    private steptreck.Domain.DTOs.TeamDTOs.MemberDTOs.UpdateTeamRoleDto _roleModel = new();
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        if (_isEmployee)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/tasks", forceLoad: true);
+            return;
+        }
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _members = await TeamsVm.GetTeamMembersAsync(TeamId);
+        _freeMembers = await TeamsVm.GetFreeEmployee(ProjectId);
+        _loading = false;
+    }
+
+    private void OpenMember(int id)
+    {
+        Nav.NavigateTo($"/workplace/members/{id}");
+    }
+
+    private string? GetAvatarUrl(TeamMemberDto m)
+    {
+        var avatarUrl = m.AvatarUrl;
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+
+    private void OpenAddModal()
+    {
+        if (_isOwner)
+            return;
+
+        _addModel = new steptreck.Domain.DTOs.TeamDTOs.MemberDTOs.CreateMebmerProjectDto
+        {
+            TeamId = TeamId,
+            MemberId = 0,
+            TeamRole = null
+        };
+        _alert = null;
+        _alertKind = "ok";
+        _showAddModal = true;
+    }
+
+    private void CloseAddModal()
+    {
+        _showAddModal = false;
+    }
+
+    private async Task AddMemberAsync()
+    {
+        if (_isOwner)
+            return;
+
+        if (_addModel.MemberId <= 0)
+        {
+            _alertKind = "err";
+            _alert = "Выберите сотрудника.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await TeamsVm.AddMemberAsync(_addModel);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Участник добавлен.";
+                _showAddModal = false;
+                _roleReady = true;
+
+        await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось добавить участника.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenRoleModal(TeamMemberDto member)
+    {
+        if (_isOwner)
+            return;
+
+        _roleModel = new steptreck.Domain.DTOs.TeamDTOs.MemberDTOs.UpdateTeamRoleDto
+        {
+            MemberId = member.MemberId,
+            RoleName = member.TeamRole ?? string.Empty
+        };
+        _alert = null;
+        _alertKind = "ok";
+        _showRoleModal = true;
+    }
+
+    private void CloseRoleModal()
+    {
+        _showRoleModal = false;
+    }
+
+    private void OpenDeleteModal(TeamMemberDto member)
+    {
+        if (_isOwner)
+            return;
+
+        _deleteMemberId = member.MemberId;
+        _deleteMemberName = member.FullName;
+        _alert = null;
+        _alertKind = "ok";
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteMemberId = null;
+        _deleteMemberName = null;
+    }
+
+    private async Task DeleteMemberAsync()
+    {
+        if (_isOwner || !_deleteMemberId.HasValue)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await TeamsVm.DeleteMemberAsync(TeamId, _deleteMemberId.Value);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Участник откреплен.";
+                CloseDeleteModal();
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось открепить участника.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task UpdateRoleAsync()
+    {
+        if (_isOwner)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_roleModel.RoleName))
+        {
+            _alertKind = "err";
+            _alert = "Введите роль.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await TeamsVm.UpdateMemberRoleAsync(_roleModel);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Роль обновлена.";
+                _showRoleModal = false;
+                _roleReady = true;
+
+        await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось обновить роль.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}
+
+
+

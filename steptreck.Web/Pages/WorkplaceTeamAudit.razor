@@ -1,0 +1,113 @@
+@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/audit"
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-audit-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="audit"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+        else if (_roleReady)
+        {
+            <div class="actions">
+                <button class="btn ghost" type="button" @onclick="GoToInfo">К команде</button>
+            </div>
+        }
+
+        <AuditLogPanel Scope="team"
+                       TeamId="TeamId"
+                       Title="Журнал команды"
+                       Subtitle="Изменения, связанные с этой командой." />
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    [Parameter]
+    public int TeamId { get; set; }
+
+    private bool _roleReady;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+
+        if (_isEmployee)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/tasks", forceLoad: true);
+            return;
+        }
+
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/audit", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToDashboard()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/dashboard");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+}

@@ -1,0 +1,244 @@
+﻿@page "/workplace/tasks/my-history"
+@page "/workplace/members/{MemberId:int}/tasks/history"
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.TaskDTOs
+@inject steptreck.Web.ViewModel.TaskViewModel TasksVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page my-tasks-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>@PageTitle</h1>
+                <p class="section-subtitle">@PageSubtitle</p>
+            </div>
+            <div class="page-actions">
+                <a class="btn ghost" href="@ActiveUrl">Активные задачи</a>
+                @if (IsMemberMode)
+                {
+                    <a class="btn ghost" href="@ProfileUrl">Назад к профилю</a>
+                }
+            </div>
+        </div>
+
+        @if (!_loading)
+        {
+            <TaskFiltersToolbar ItemsCount="@HistoryTasks.Count"
+                                @bind-SearchTerm="_taskSearch"
+                                @bind-PriorityFilter="_priorityFilter"
+                                @bind-DateSort="_dateSort"
+                                @bind-Collapsed="_filtersCollapsed" />
+        }
+
+        @if (_loading)
+        {
+            <div class="tasks-empty card">Загружаем задачи...</div>
+        }
+        else if (HistoryTasks.Count == 0)
+        {
+            <div class="tasks-empty card">@EmptyText</div>
+        }
+        else
+        {
+            <section class="tasks-list">
+                @foreach (var task in HistoryTasks)
+                {
+                    <article class="task-card card" role="button" tabindex="0" @onclick="() => OpenTask(task.Id)">
+                        <div class="task-main">
+                            <div class="task-title">@task.Title</div>
+                            <div class="task-meta">
+                                <span class="task-pill status @GetStatusClass(task.Status)">@GetStatusLabel(task.Status)</span>
+                                <span class="task-pill priority @GetPriorityClass(task.Priority)">@GetPriorityLabel(task.Priority)</span>
+                                @if (task.Deadline.HasValue)
+                                {
+                                    <span class="task-pill deadline">@FormatDate(task.Deadline)</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="task-side">
+                            <div class="task-project">Проект #@task.ProjectId</div>
+                            @if (!string.IsNullOrWhiteSpace(task.TeamName))
+                            {
+                                <div class="task-team">@task.TeamName</div>
+                            }
+                            <div class="task-id">#@task.Id</div>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter] public int? MemberId { get; set; }
+
+    private List<TaskListItemDto> _tasks = new();
+    private MemberProfileDto? _member;
+    private bool _loading = true;
+    private string _taskSearch = string.Empty;
+    private string _priorityFilter = "all";
+    private string _dateSort = "none";
+    private bool _filtersCollapsed;
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int AdminRoleId = 5;
+
+    private bool IsMemberMode => MemberId.HasValue;
+    private string PageTitle => IsMemberMode
+        ? _member?.FullName is null ? "История задач сотрудника" : $"История задач: {_member.FullName}"
+        : "История моих задач";
+    private string PageSubtitle => IsMemberMode
+        ? "Завершенные и отмененные задачи сотрудника."
+        : "Ваши завершенные и отмененные задачи.";
+    private string EmptyText => HasTaskFilters
+        ? "По выбранным фильтрам задачи не найдены."
+        : IsMemberMode
+        ? "У сотрудника пока нет задач в истории."
+        : "У вас пока нет задач в истории.";
+    private string ActiveUrl => IsMemberMode
+        ? $"/workplace/members/{MemberId}/tasks"
+        : "/workplace/tasks/my";
+    private string ProfileUrl => $"/workplace/members/{MemberId}";
+    private IReadOnlyList<TaskListItemDto> HistoryTasks => ApplyTaskFilters(_tasks.Where(IsHistoryTask));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        if (roleId == OwnerRoleId && !IsMemberMode)
+        {
+            Nav.NavigateTo("/workplace/owner-dashboard", forceLoad: true);
+            return;
+        }
+
+        if (roleId == OwnerRoleId || (IsMemberMode && roleId != TeamLeadRoleId))
+        {
+            Nav.NavigateTo("/workplace/owner-dashboard", forceLoad: true);
+            return;
+        }
+
+        _loading = true;
+
+        if (IsMemberMode)
+        {
+            _member = await MembersVm.GetProfile(MemberId!.Value);
+            _tasks = await TasksVm.GetMemberTasksAsync<TaskListItemDto>(MemberId.Value);
+        }
+        else
+        {
+            _member = null;
+            _tasks = await TasksVm.GetMyTasksAsync<TaskListItemDto>();
+        }
+
+        _loading = false;
+    }
+
+    private void OpenTask(int taskId)
+        => Nav.NavigateTo($"/workplace/tasks/{taskId}");
+
+    private static bool IsHistoryTask(TaskListItemDto task)
+    {
+        var status = (task.Status ?? string.Empty).Trim().ToLowerInvariant();
+        return status is "done" or "canceled";
+    }
+
+    private IReadOnlyList<TaskListItemDto> ApplyTaskFilters(IEnumerable<TaskListItemDto> tasks)
+    {
+        var query = _taskSearch.Trim();
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            tasks = tasks.Where(t => (t.Title ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.Equals(_priorityFilter, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            tasks = tasks.Where(t => string.Equals(NormalizePriority(t.Priority), _priorityFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        tasks = _dateSort switch
+        {
+            "deadline_asc" => tasks.OrderBy(t => t.Deadline.HasValue ? 0 : 1).ThenBy(t => t.Deadline),
+            "deadline_desc" => tasks.OrderBy(t => t.Deadline.HasValue ? 0 : 1).ThenByDescending(t => t.Deadline),
+            "no_deadline_first" => tasks.OrderByDescending(t => !t.Deadline.HasValue).ThenBy(t => t.Deadline),
+            _ => tasks
+        };
+
+        return tasks.ToList();
+    }
+
+    private bool HasTaskFilters =>
+        !string.IsNullOrWhiteSpace(_taskSearch) ||
+        !string.Equals(_priorityFilter, "all", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizePriority(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "low",
+            "обычный" or "normal" or "medium" => "normal",
+            "высокий" or "high" => "high",
+            "критический" or "critical" => "critical",
+            _ => "other"
+        };
+    }
+
+    private static string FormatDate(DateTime? value)
+        => value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string GetStatusClass(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "todo",
+            "inprogress" => "inprogress",
+            "done" => "done",
+            "canceled" => "canceled",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetStatusLabel(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "К выполнению",
+            "inprogress" => "В работе",
+            "done" => "Готово",
+            "canceled" => "Отменено",
+            _ => string.IsNullOrWhiteSpace(status) ? "—" : status
+        };
+    }
+
+    private static string GetPriorityClass(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "low",
+            "обычный" or "normal" => "normal",
+            "высокий" or "high" => "high",
+            "критический" or "critical" => "critical",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetPriorityLabel(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "Низкий",
+            "обычный" or "normal" => "Обычный",
+            "высокий" or "high" => "Высокий",
+            "критический" or "critical" => "Критический",
+            _ => string.IsNullOrWhiteSpace(priority) ? "—" : priority
+        };
+    }
+}

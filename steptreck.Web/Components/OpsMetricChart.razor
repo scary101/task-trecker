@@ -1,0 +1,311 @@
+﻿@using steptreck.Domain.DTOs
+
+<div class="ops-chart card">
+    <div class="ops-chart-head">
+        <div>
+            <div class="ops-chart-title">@Title</div>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <div class="ops-chart-subtitle">@Subtitle</div>
+            }
+        </div>
+        <div class="ops-chart-kpi">
+            @if (Loading)
+            {
+                <span class="kpi-skeleton"></span>
+            }
+            else if (_model is null)
+            {
+                <span class="kpi-muted">нет данных</span>
+            }
+            else
+            {
+                <span class="kpi-value">@FormatValue(_model.Latest)</span>
+                <span class="kpi-unit">@Unit</span>
+            }
+        </div>
+    </div>
+
+    @if (Loading)
+    {
+        <div class="ops-chart-loading">
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+            <div class="loading-bar"></div>
+        </div>
+    }
+    else if (_model is null)
+    {
+        <div class="ops-chart-empty">Данных пока нет. Проверьте Prometheus и повторите запрос.</div>
+    }
+    else
+    {
+        <div class="ops-chart-canvas">
+            <svg viewBox="0 0 1000 280" role="img" aria-label="@Title">
+                <defs>
+                    @for (var i = 0; i < _model.Series.Count; i++)
+                    {
+                        <linearGradient id="opsGradient@i" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="@_model.Series[i].Color" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="@_model.Series[i].Color" stop-opacity="0" />
+                        </linearGradient>
+                    }
+                </defs>
+
+                @foreach (var y in _model.GridY)
+                {
+                    <line x1="48" y1="@y" x2="972" y2="@y" class="chart-grid-line" />
+                }
+
+                @foreach (var item in _model.Series)
+                {
+                    if (!string.IsNullOrWhiteSpace(item.AreaPath))
+                    {
+                        <path d="@item.AreaPath" fill="url(#opsGradient@item.Index)" />
+                    }
+                    <path d="@item.LinePath" stroke="@item.Color" class="chart-line" />
+                }
+
+                <text x="12" y="@(_model.MaxLabelY)" class="chart-axis-label" dominant-baseline="hanging">@FormatValue(_model.MaxValue)</text>
+                <text x="12" y="@(_model.MinLabelY)" class="chart-axis-label" dominant-baseline="text-after-edge">@FormatValue(_model.MinValue)</text>
+            </svg>
+        </div>
+
+        <div class="ops-chart-footer">
+            <div class="chart-legend">
+                @foreach (var item in _model.Series)
+                {
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:@item.Color"></span>
+                        <span>@item.Name</span>
+                    </div>
+                }
+            </div>
+            <div class="chart-meta">
+                <div class="meta-row">
+                    <span class="meta-label">Диапазон</span>
+                    <span class="meta-value">@_model.RangeLabel</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Пик</span>
+                    <span class="meta-value">@FormatValue(_model.MaxValue) @Unit</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">Минимум</span>
+                    <span class="meta-value">@FormatValue(_model.MinValue) @Unit</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ops-chart-times">
+            @foreach (var label in _model.TimeLabels)
+            {
+                <span>@label</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "";
+
+    [Parameter]
+    public string Subtitle { get; set; } = "";
+
+    [Parameter]
+    public string Unit { get; set; } = "";
+
+    [Parameter]
+    public List<Series> Series { get; set; } = new();
+
+    [Parameter]
+    public bool Loading { get; set; }
+
+    [Parameter]
+    public Func<double, string>? ValueFormatter { get; set; }
+
+    private ChartModel? _model;
+
+    protected override void OnParametersSet()
+    {
+        _model = BuildModel(Series);
+    }
+
+    private string FormatValue(double value)
+    {
+        if (ValueFormatter is not null)
+            return ValueFormatter.Invoke(value);
+
+        if (Math.Abs(value) >= 1000000)
+            return $"{value / 1000000:0.#}M";
+        if (Math.Abs(value) >= 1000)
+            return $"{value / 1000:0.#}k";
+        if (Math.Abs(value) >= 100)
+            return value.ToString("0");
+        if (Math.Abs(value) >= 10)
+            return value.ToString("0.0");
+        return value.ToString("0.00");
+    }
+
+    private static ChartModel? BuildModel(List<Series> data)
+    {
+        if (data is null || data.Count == 0)
+            return null;
+
+        var seriesPoints = data
+            .SelectMany(s => s.points.Select(p => (Series: s.name, Point: p)))
+            .ToList();
+
+        if (seriesPoints.Count == 0)
+            return null;
+
+        var minT = seriesPoints.Min(p => p.Point.t);
+        var maxT = seriesPoints.Max(p => p.Point.t);
+        if (minT == maxT)
+            maxT = minT + 1;
+
+        var minV = seriesPoints.Min(p => p.Point.v);
+        var maxV = seriesPoints.Max(p => p.Point.v);
+        if (Math.Abs(maxV - minV) < 0.00001)
+        {
+            maxV += 1;
+            minV = Math.Max(0, minV - 1);
+        }
+
+        const double viewWidth = 1000;
+        const double viewHeight = 280;
+        const double padLeft = 48;
+        const double padRight = 28;
+        const double padTop = 18;
+        const double padBottom = 46;
+        var plotWidth = viewWidth - padLeft - padRight;
+        var plotHeight = viewHeight - padTop - padBottom;
+
+        string[] palette = { "#22d3ee", "#f97316", "#34d399", "#f472b6" };
+        var renderSeries = new List<SeriesRender>();
+
+        for (var i = 0; i < data.Count; i++)
+        {
+            var series = data[i];
+            var points = series.points
+                .OrderBy(p => p.t)
+                .ToList();
+
+            if (points.Count == 0)
+                continue;
+
+            var sb = new System.Text.StringBuilder();
+            for (var idx = 0; idx < points.Count; idx++)
+            {
+                var point = points[idx];
+                var x = padLeft + (point.t - minT) * plotWidth / (maxT - minT);
+                var y = padTop + (maxV - point.v) * plotHeight / (maxV - minV);
+
+                if (idx == 0)
+                    sb.Append($"M {x:0.##} {y:0.##}");
+                else
+                    sb.Append($" L {x:0.##} {y:0.##}");
+            }
+
+            var linePath = sb.ToString();
+            var first = points.First();
+            var last = points.Last();
+            var firstX = padLeft + (first.t - minT) * plotWidth / (maxT - minT);
+            var lastX = padLeft + (last.t - minT) * plotWidth / (maxT - minT);
+            var bottomY = padTop + plotHeight;
+            var areaPath = $"{linePath} L {lastX:0.##} {bottomY:0.##} L {firstX:0.##} {bottomY:0.##} Z";
+
+            renderSeries.Add(new SeriesRender
+            {
+                Index = i,
+                Name = string.IsNullOrWhiteSpace(series.name) ? $"Series {i + 1}" : series.name,
+                LinePath = linePath,
+                AreaPath = i == 0 ? areaPath : string.Empty,
+                Color = palette[i % palette.Length]
+            });
+        }
+
+        var span = ToTime(maxT) - ToTime(minT);
+        var timeLabels = new List<string>();
+        for (var i = 0; i < 4; i++)
+        {
+            var stamp = ToTime(minT).AddTicks(span.Ticks * i / 3);
+            timeLabels.Add(FormatTime(stamp, span));
+        }
+
+        var gridY = new List<double>
+        {
+            padTop,
+            padTop + plotHeight * 0.33,
+            padTop + plotHeight * 0.66,
+            padTop + plotHeight
+        };
+
+        var latestValue = seriesPoints
+            .OrderBy(p => p.Point.t)
+            .Last()
+            .Point.v;
+
+        var rangeLabel = FormatRangeLabel(span);
+
+        return new ChartModel
+        {
+            Series = renderSeries,
+            GridY = gridY,
+            MinValue = minV,
+            MaxValue = maxV,
+            Latest = latestValue,
+            TimeLabels = timeLabels,
+            MaxLabelY = padTop,
+            MinLabelY = padTop + plotHeight,
+            RangeLabel = rangeLabel
+        };
+    }
+
+    private static DateTimeOffset ToTime(long value)
+    {
+        return value > 1000000000000
+            ? DateTimeOffset.FromUnixTimeMilliseconds(value)
+            : DateTimeOffset.FromUnixTimeSeconds(value);
+    }
+
+    private static string FormatTime(DateTimeOffset time, TimeSpan span)
+    {
+        if (span.TotalDays >= 2)
+            return time.ToString("dd.MM HH:mm");
+        return time.ToString("HH:mm");
+    }
+
+    private static string FormatRangeLabel(TimeSpan span)
+    {
+        if (span.TotalDays >= 1)
+            return $"{span.TotalDays:0.#}д";
+        if (span.TotalHours >= 1)
+            return $"{span.TotalHours:0.#}ч";
+        return $"{span.TotalMinutes:0}м";
+    }
+
+    private sealed class ChartModel
+    {
+        public List<SeriesRender> Series { get; set; } = new();
+        public List<double> GridY { get; set; } = new();
+        public double MinValue { get; set; }
+        public double MaxValue { get; set; }
+        public double Latest { get; set; }
+        public List<string> TimeLabels { get; set; } = new();
+        public double MaxLabelY { get; set; }
+        public double MinLabelY { get; set; }
+        public string RangeLabel { get; set; } = "";
+    }
+
+    private sealed class SeriesRender
+    {
+        public int Index { get; set; }
+        public string Name { get; set; } = "";
+        public string LinePath { get; set; } = "";
+        public string AreaPath { get; set; } = "";
+        public string Color { get; set; } = "#22d3ee";
+    }
+}
+

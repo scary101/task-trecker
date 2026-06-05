@@ -1,0 +1,77 @@
+﻿@using steptreck.Domain.DTOs.PlanDTOs
+
+<article class="plan-card card @TierClass">
+    <div class="plan-ribbon">@TierLabel</div>
+    <div class="plan-head">
+        <div>
+            <h3>@Plan.Name</h3>
+            <div class="plan-sub">@Plan.Description</div>
+        </div>
+        <div class="plan-price">
+            <div class="price-value">@FormatPrice(Plan.BasePriceCents, Plan.Currency)</div>
+            <div class="price-label">в месяц</div>
+        </div>
+    </div>
+
+    <div class="plan-limits">
+        <div>
+            <span>Участники</span>
+            <strong>@Plan.MinMembers – @Plan.MaxMembers</strong>
+        </div>
+        <div>
+            <span>Команды</span>
+            <strong>@Plan.MinTeams – @Plan.MaxTeams</strong>
+        </div>
+        <div>
+            <span>Проекты</span>
+            <strong>@Plan.MinProjects – @Plan.MaxProjects</strong>
+        </div>
+    </div>
+
+    <div class="plan-features">
+        <span class="feature-chip @(Plan.AllowInvites ? "on" : "off")">Инвайты</span>
+        <span class="feature-chip @(Plan.AllowNewTeams ? "on" : "off")">Новые команды</span>
+        <span class="feature-chip @(Plan.AllowNewProjects ? "on" : "off")">Новые проекты</span>
+    </div>
+
+    <div class="plan-actions">
+        <a class="btn primary" href="@GetCheckoutUrl()">Оформить</a>
+    </div>
+</article>
+
+@code {
+    [Parameter, EditorRequired]
+    public PlanPublicDto Plan { get; set; } = null!;
+
+    [Parameter]
+    public int Index { get; set; }
+
+    private string TierClass => Index switch
+    {
+        0 => "tier-starter",
+        1 => "tier-growth",
+        2 => "tier-pro",
+        _ => "tier-elite"
+    };
+
+    private string TierLabel => Index switch
+    {
+        0 => "Старт",
+        1 => "Рост",
+        2 => "Про",
+        _ => "Элита"
+    };
+
+    private string GetCheckoutUrl()
+        => $"/subscription/checkout?planId={Plan.Id}&months=1";
+
+    private static string FormatPrice(int cents, string currency)
+    {
+        var value = cents / 100.0m;
+        var cur = string.IsNullOrWhiteSpace(currency) ? "RUB" : currency;
+        if (string.Equals(cur, "RUB", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(cur, "RUR", StringComparison.OrdinalIgnoreCase))
+            return $"{value:0.##} руб";
+        return $"{value:0.##} {cur}";
+    }
+}

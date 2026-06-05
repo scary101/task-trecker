@@ -1,0 +1,521 @@
+﻿@using steptreck.Domain
+@inject steptreck.Web.ViewModel.AuditViewModel AuditVm
+@inject IJSRuntime JS
+
+<section class="audit-panel">
+    <div class="section-head audit-panel-head">
+        <div>
+            <h2>@Title</h2>
+            <p class="section-subtitle">@Subtitle</p>
+        </div>
+
+        <div class="audit-actions">
+            <select class="input audit-action-filter" @bind="_action" @bind:after="ApplyFiltersAsync" disabled="@_loading">
+                <option value="">Все действия</option>
+                <option value="create">Создание</option>
+                <option value="update">Изменение</option>
+                <option value="delete">Удаление</option>
+            </select>
+
+            <input class="input audit-author-search"
+                   placeholder="Автор"
+                   @bind="_actor"
+                   @onkeydown="HandleSearchKeyDown"
+                   disabled="@_loading" />
+
+            <input class="input audit-date"
+                   type="date"
+                   title="Дата от"
+                   @bind="_dateFrom"
+                   @bind:after="OnDateFromChangedAsync"
+                   max="@DateToValue"
+                   disabled="@_loading" />
+
+            <input class="input audit-date"
+                   type="date"
+                   title="Дата до"
+                   @bind="_dateTo"
+                   @bind:after="OnDateToChangedAsync"
+                   min="@DateFromValue"
+                   disabled="@_loading" />
+
+            @if (IsOrganizationScope)
+            {
+                <input class="input audit-search"
+                       placeholder="Поиск по журналу"
+                       @bind="_search"
+                       @onkeydown="HandleSearchKeyDown"
+                       disabled="@_loading" />
+
+                <select class="input audit-sort" @bind="_sortBy" @bind:after="ApplyOrganizationFiltersAsync" disabled="@_loading">
+                    <option value="date">Дата</option>
+                    <option value="action">Действие</option>
+                    <option value="entity">Сущность</option>
+                    <option value="title">Заголовок</option>
+                    <option value="project">Проект</option>
+                    <option value="team">Команда</option>
+                    <option value="task">Задача</option>
+                </select>
+
+                <button class="btn ghost" type="button" @onclick="ToggleSortDirectionAsync" disabled="@_loading">
+                    @(_sortDesc ? "По убыванию" : "По возрастанию")
+                </button>
+
+                <button class="btn ghost" type="button" @onclick="ApplyOrganizationFiltersAsync" disabled="@_loading">
+                    Найти
+                </button>
+            }
+
+            <button class="btn ghost" type="button" @onclick="ResetFiltersAsync" disabled="@_loading">
+                Сбросить
+            </button>
+
+            <select class="input audit-page-size" @bind="_pageSize" @bind:after="ChangePageSizeAsync" disabled="@_loading">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+            </select>
+
+            <button class="btn ghost" type="button" @onclick="ExportExcelAsync" disabled="@(_loading || _logs.Count == 0)">
+                Excel
+            </button>
+
+            <button class="btn primary" type="button" @onclick="ReloadAsync" disabled="@_loading">
+                Обновить
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_alert))
+    {
+        <div class="alert err">@_alert</div>
+    }
+
+    <div class="audit-grid">
+        @if (_loading)
+        {
+            <div class="audit-empty card">Загружаем журнал...</div>
+        }
+        else if (_logs.Count == 0)
+        {
+            <div class="audit-empty card">Записей пока нет.</div>
+        }
+        else
+        {
+            @foreach (var log in _logs)
+            {
+                <article class="audit-card card">
+                    <div class="audit-top">
+                        <div>
+                            <div class="audit-title">@(log.Title ?? GetEntityLabel(log))</div>
+
+                            @if (!string.IsNullOrWhiteSpace(log.Description))
+                            {
+                                <p>@log.Description</p>
+                            }
+                        </div>
+
+                        <span class="audit-action @GetActionClass(log.Action)">
+                            @GetActionLabel(log.Action)
+                        </span>
+                    </div>
+
+                    <div class="audit-meta">
+                        <span>@FormatDate(log.CreatedAt)</span>
+                        <span>Автор: @(log.ActorName ?? "—")</span>
+                        <span>Сущность: @GetEntityLabel(log)</span>
+
+                        @if (log.ProjectId.HasValue)
+                        {
+                            <span>Проект #@log.ProjectId</span>
+                        }
+
+                        @if (log.TeamId.HasValue)
+                        {
+                            <span>Команда #@log.TeamId</span>
+                        }
+
+                        @if (log.TaskId.HasValue)
+                        {
+                            <span>Задача #@log.TaskId</span>
+                        }
+
+                        @if (log.TargetMemberId.HasValue)
+                        {
+                            <span>Участник #@log.TargetMemberId</span>
+                        }
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(log.OldValues) || !string.IsNullOrWhiteSpace(log.NewValues))
+                    {
+                        <div class="audit-values">
+                            <div>
+                                <div class="audit-label">До</div>
+                                <pre>@(log.OldValues ?? "—")</pre>
+                            </div>
+
+                            <div>
+                                <div class="audit-label">После</div>
+                                <pre>@(log.NewValues ?? "—")</pre>
+                            </div>
+                        </div>
+                    }
+                </article>
+            }
+        }
+    </div>
+
+    @if (!_loading && _totalCount > 0)
+    {
+        <div class="audit-pager">
+            <button class="btn ghost" type="button" @onclick="PreviousPageAsync" disabled="@(_page <= 1)">
+                Назад
+            </button>
+
+            <span>@_page / @_totalPages · всего @_totalCount</span>
+
+            <button class="btn ghost" type="button" @onclick="NextPageAsync" disabled="@(_page >= _totalPages)">
+                Вперед
+            </button>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter] public string Scope { get; set; } = "organization";
+    [Parameter] public int? ProjectId { get; set; }
+    [Parameter] public int? TeamId { get; set; }
+    [Parameter] public int? MemberId { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+
+    private List<AuditLogDto> _logs = new();
+
+    private bool _loading = true;
+    private string? _alert;
+
+    private int _page = 1;
+    private int _pageSize = 20;
+    private int _totalCount;
+    private int _totalPages => Math.Max(1, (int)Math.Ceiling(_totalCount / (double)_pageSize));
+
+    private string? _loadedKey;
+
+    private string _search = "";
+    private string _actor = "";
+    private string _action = "";
+
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
+
+    private string _sortBy = "date";
+    private bool _sortDesc = true;
+
+    private string? DateFromValue => _dateFrom?.ToString("yyyy-MM-dd");
+    private string? DateToValue => _dateTo?.ToString("yyyy-MM-dd");
+
+    private bool IsOrganizationScope => NormalizeScope() == "organization";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = $"{NormalizeScope()}:{ProjectId}:{TeamId}:{MemberId}:{_pageSize}:{_search}:{_actor}:{_action}:{DateFromValue}:{DateToValue}:{_sortBy}:{_sortDesc}";
+
+        if (_loadedKey == key)
+            return;
+
+        _loadedKey = key;
+        _page = 1;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+
+        try
+        {
+            NormalizeDateRange();
+
+            var result = await FetchAsync();
+
+            _logs = result.Items ?? new List<AuditLogDto>();
+            _totalCount = result.TotalCount;
+            _page = result.Page <= 0 ? _page : result.Page;
+            _pageSize = result.PageSize <= 0 ? _pageSize : result.PageSize;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            _alert = "Нет доступа к журналу аудита.";
+            _logs = new();
+            _totalCount = 0;
+        }
+        catch (Exception ex)
+        {
+            _alert = ex.Message;
+            _logs = new();
+            _totalCount = 0;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Task<PagedResult<AuditLogDto>> FetchAsync()
+        => FetchAsync(_page, _pageSize);
+
+    private Task<PagedResult<AuditLogDto>> FetchAsync(int page, int pageSize)
+    {
+        return NormalizeScope() switch
+        {
+            "project" when ProjectId.HasValue => AuditVm.GetProjectLogsAsync(
+                ProjectId.Value,
+                page,
+                pageSize,
+                _action,
+                _actor,
+                DateFromValue,
+                DateToValue),
+
+            "team" when TeamId.HasValue => AuditVm.GetTeamLogsAsync(
+                TeamId.Value,
+                page,
+                pageSize,
+                _action,
+                _actor,
+                DateFromValue,
+                DateToValue),
+
+            "member" when MemberId.HasValue => AuditVm.GetMemberLogsAsync(
+                MemberId.Value,
+                page,
+                pageSize,
+                _action,
+                _actor,
+                DateFromValue,
+                DateToValue),
+
+            "organization" => AuditVm.GetOrganizationLogsAsync(
+                page,
+                pageSize,
+                _search,
+                _action,
+                _actor,
+                DateFromValue,
+                DateToValue,
+                _sortBy,
+                _sortDesc),
+
+            _ => Task.FromResult(new PagedResult<AuditLogDto>())
+        };
+    }
+
+    private async Task ReloadAsync()
+    {
+        _loadedKey = null;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageSizeAsync()
+    {
+        _page = 1;
+        _loadedKey = null;
+        await LoadAsync();
+    }
+
+    private async Task ApplyOrganizationFiltersAsync()
+    {
+        _page = 1;
+        _loadedKey = null;
+        await LoadAsync();
+    }
+
+    private async Task ApplyFiltersAsync()
+    {
+        _page = 1;
+        _loadedKey = null;
+        await LoadAsync();
+    }
+
+    private async Task OnDateFromChangedAsync()
+    {
+        if (_dateFrom.HasValue && _dateTo.HasValue && _dateFrom.Value.Date > _dateTo.Value.Date)
+            _dateTo = _dateFrom;
+
+        await ApplyFiltersAsync();
+    }
+
+    private async Task OnDateToChangedAsync()
+    {
+        if (_dateFrom.HasValue && _dateTo.HasValue && _dateTo.Value.Date < _dateFrom.Value.Date)
+            _dateFrom = _dateTo;
+
+        await ApplyFiltersAsync();
+    }
+
+    private void NormalizeDateRange()
+    {
+        if (_dateFrom.HasValue && _dateTo.HasValue && _dateFrom.Value.Date > _dateTo.Value.Date)
+            _dateTo = _dateFrom;
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        _search = "";
+        _actor = "";
+        _action = "";
+        _dateFrom = null;
+        _dateTo = null;
+        _sortBy = "date";
+        _sortDesc = true;
+        _page = 1;
+        _loadedKey = null;
+
+        await LoadAsync();
+    }
+
+    private async Task ToggleSortDirectionAsync()
+    {
+        _sortDesc = !_sortDesc;
+        await ApplyOrganizationFiltersAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await ApplyFiltersAsync();
+    }
+
+    private async Task PreviousPageAsync()
+    {
+        if (_page <= 1)
+            return;
+
+        _page--;
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (_page >= _totalPages)
+            return;
+
+        _page++;
+        await LoadAsync();
+    }
+
+    private async Task ExportExcelAsync()
+    {
+        if (_logs.Count == 0)
+            return;
+
+        var rows = await GetRowsForExportAsync();
+        var sb = new System.Text.StringBuilder();
+
+        sb.AppendLine("<html><head><meta charset=\"utf-8\"></head><body>");
+        sb.AppendLine("<table border=\"1\">");
+        sb.AppendLine("<thead><tr>");
+
+        foreach (var title in new[]
+        {
+            "Id", "Действие", "Тип сущности", "Id сущности", "Название", "Заголовок",
+            "Автор", "Проект", "Команда", "Задача", "Участник", "До", "После", "Дата"
+        })
+        {
+            sb.Append("<th>").Append(Html(title)).AppendLine("</th>");
+        }
+
+        sb.AppendLine("</tr></thead><tbody>");
+
+        foreach (var log in rows)
+        {
+            sb.AppendLine("<tr>");
+            AppendCell(sb, log.Id.ToString());
+            AppendCell(sb, GetActionLabel(log.Action));
+            AppendCell(sb, log.EntityType);
+            AppendCell(sb, log.EntityId?.ToString() ?? "");
+            AppendCell(sb, log.EntityName ?? "");
+            AppendCell(sb, log.Title ?? "");
+            AppendCell(sb, log.ActorName ?? "");
+            AppendCell(sb, log.ProjectId?.ToString() ?? "");
+            AppendCell(sb, log.TeamId?.ToString() ?? "");
+            AppendCell(sb, log.TaskId?.ToString() ?? "");
+            AppendCell(sb, log.TargetMemberId?.ToString() ?? "");
+            AppendCell(sb, log.OldValues ?? "");
+            AppendCell(sb, log.NewValues ?? "");
+            AppendCell(sb, log.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss"));
+            sb.AppendLine("</tr>");
+        }
+
+        sb.AppendLine("</tbody></table></body></html>");
+
+        var fileName = $"audit_{NormalizeScope()}_{DateTime.UtcNow:yyyyMMddHHmmss}.xls";
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(sb.ToString()));
+
+        await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "application/vnd.ms-excel", base64);
+    }
+
+    private async Task<List<AuditLogDto>> GetRowsForExportAsync()
+    {
+        var result = await FetchAsync(1, 100);
+        var rows = result.Items ?? new List<AuditLogDto>();
+
+        while (result.HasNext)
+        {
+            result = await FetchAsync(result.Page + 1, 100);
+            rows.AddRange(result.Items ?? new List<AuditLogDto>());
+        }
+
+        return rows;
+    }
+
+    private static void AppendCell(System.Text.StringBuilder sb, string value)
+    {
+        sb.Append("<td>").Append(Html(value)).AppendLine("</td>");
+    }
+
+    private static string Html(string value)
+        => System.Net.WebUtility.HtmlEncode(value);
+
+    private string NormalizeScope()
+        => (Scope ?? "organization").Trim().ToLowerInvariant();
+
+    private static string FormatDate(DateTime value)
+        => value.ToString("dd.MM.yyyy HH:mm");
+
+    private static string GetEntityLabel(AuditLogDto log)
+    {
+        var name = string.IsNullOrWhiteSpace(log.EntityName) ? null : log.EntityName;
+        var id = log.EntityId.HasValue ? $" #{log.EntityId}" : "";
+
+        return name is null ? $"{log.EntityType}{id}" : $"{name}{id}";
+    }
+
+    private static string GetActionLabel(string? action)
+    {
+        return action?.ToLowerInvariant() switch
+        {
+            "create" or "insert" => "Создание",
+            "update" => "Изменение",
+            "delete" => "Удаление",
+            _ => action ?? "Действие"
+        };
+    }
+
+    private static string GetActionClass(string? action)
+    {
+        if (string.IsNullOrWhiteSpace(action))
+            return "neutral";
+
+        return action.ToLowerInvariant() switch
+        {
+            "insert" => "ok",
+            "create" => "ok",
+            "update" => "warn",
+            "delete" => "err",
+            _ => "neutral"
+        };
+    }
+}

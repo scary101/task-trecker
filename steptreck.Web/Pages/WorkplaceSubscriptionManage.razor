@@ -1,0 +1,382 @@
+﻿@page "/workplace/subscription/manage"
+@using steptreck.Domain.DTOs.SubscriptionsDTOs
+@inject steptreck.Web.ViewModel.SubscriptionsViewModel SubsVm
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<PageTitle>Управление подпиской — StepTreck</PageTitle>
+
+@if (!_accessChecked)
+{
+    <main class="page sub-manage-page">
+        <section class="sub-empty-state card">
+            <h1>Проверяем доступ...</h1>
+        </section>
+    </main>
+}
+else if (!_allowAccess)
+{
+    <main class="page sub-manage-page">
+        <section class="sub-empty-state card">
+            <h1>Нет доступа</h1>
+            <p>Эта страница доступна только руководителю организации.</p>
+        </section>
+    </main>
+}
+else
+{
+<main class="page sub-manage-page">
+    @if (!_hasActiveSubscription)
+    {
+        <section class="sub-empty-state card">
+            <h1>У вас пока нет подписки.</h1>
+            <p>
+                Вы можете выбрать <a href="/#plans">план</a> или создать <a href="/subscription/config">свой</a>.
+            </p>
+        </section>
+    }
+    else
+    {
+        <section class="sub-hero">
+            <div>
+                <h1>Управление подпиской</h1>
+                <p class="section-subtitle">История платежей, чеки, продление и статус текущей подписки.</p>
+            </div>
+            <button class="btn ghost" type="button" @onclick="ReloadAsync" disabled="@_loading">Обновить</button>
+        </section>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert @(_alertKind)">@_alert</div>
+        }
+
+        <section class="sub-cards">
+            <article class="sub-card card">
+                <div class="sub-card-title">Текущая подписка</div>
+                @if (_current is null)
+                {
+                    <div class="sub-note">Данные о подписке не загружены.</div>
+                }
+                else
+                {
+                    <div class="sub-card-main">
+                        <div class="sub-header">
+                            <span class="status-badge @(_current.HasActive ? "ok" : "warn")">
+                                @(_current.HasActive ? "Активна" : "Не активна")
+                            </span>
+                            <span class="status-code">@(_current.StatusCode ?? "—")</span>
+                        </div>
+                        <div class="plan-title">@(_current.PlanName ?? "—")</div>
+                        <div class="sub-meta">
+                            <span>Период</span>
+                            <strong>@FormatDate(_current.StartDateUtc) — @FormatDate(_current.EndDateUtc)</strong>
+                        </div>
+                        <div class="sub-meta">
+                            <span>Дней осталось</span>
+                            <strong>@(_current.DaysLeft?.ToString() ?? "—")</strong>
+                        </div>
+                        <div class="sub-meta">
+                            <span>Цена/мес</span>
+                            <strong>@FormatPrice(_current.PriceCentsPerMonth, _current.Currency)</strong>
+                        </div>
+                    </div>
+                }
+            </article>
+
+            <article class="sub-card card">
+                <div class="sub-card-title">Лимиты и использование</div>
+                @if (_current is null)
+                {
+                    <div class="sub-note">Нет данных о лимитах.</div>
+                }
+                else
+                {
+                    <div class="usage-grid">
+                        <div class="usage-row @UsageClass(_current.MembersCount, _current.MaxMembers)">
+                            <div class="usage-label">Участники</div>
+                            <div class="usage-value">@_current.MembersCount <span>/ @ValueOrInfinity(_current.MaxMembers)</span></div>
+                            <div class="usage-bar"><div style="width:@Percent(_current.MembersCount, _current.MaxMembers)%"></div></div>
+                        </div>
+                        <div class="usage-row @UsageClass(_current.TeamsCount, _current.MaxTeams)">
+                            <div class="usage-label">Команды</div>
+                            <div class="usage-value">@_current.TeamsCount <span>/ @ValueOrInfinity(_current.MaxTeams)</span></div>
+                            <div class="usage-bar"><div style="width:@Percent(_current.TeamsCount, _current.MaxTeams)%"></div></div>
+                        </div>
+                        <div class="usage-row @UsageClass(_current.ProjectsCount, _current.MaxProjects)">
+                            <div class="usage-label">Проекты</div>
+                            <div class="usage-value">@_current.ProjectsCount <span>/ @ValueOrInfinity(_current.MaxProjects)</span></div>
+                            <div class="usage-bar"><div style="width:@Percent(_current.ProjectsCount, _current.MaxProjects)%"></div></div>
+                        </div>
+                    </div>
+                    <div class="sub-features">
+                        <span class="feature-chip @(_current.AllowInvites ? "on" : "off")">Инвайты</span>
+                        <span class="feature-chip @(_current.AllowNewTeams ? "on" : "off")">Новые команды</span>
+                        <span class="feature-chip @(_current.AllowNewProjects ? "on" : "off")">Новые проекты</span>
+                    </div>
+                }
+            </article>
+
+            <article class="sub-card card">
+                <div class="sub-card-title">Действия</div>
+                <div class="sub-card-main actions-stack">
+                    <button class="btn action-primary" type="button" @onclick="OpenExtendModal" disabled="@_busy">
+                        <span class="btn-icon" aria-hidden="true">?</span>
+                        Продлить подписку
+                    </button>
+                    <button class="btn action-secondary" type="button" @onclick="CancelAsync" disabled="@_busy">
+                        <span class="btn-icon" aria-hidden="true">?</span>
+                        Отменить подписку
+                    </button>
+                    <div class="sub-note">Чек скачивается по каждой операции в истории платежей.</div>
+                </div>
+            </article>
+        </section>
+
+        <section class="payments-section">
+            <div class="payments-head">
+                <div>
+                    <h2>История платежей</h2>
+                    <p>Последние операции по подписке организации.</p>
+                </div>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="payments-empty">Загружаем платежи...</div>
+            }
+            else if (_payments.Count == 0)
+            {
+                <div class="payments-empty">Платежей пока нет.</div>
+            }
+            else
+            {
+                <div class="payments-table">
+                    <div class="payments-row head">
+                        <span>ID</span>
+                        <span>Сумма</span>
+                        <span>Статус</span>
+                        <span>Причина</span>
+                        <span>Дата</span>
+                        <span>Чек</span>
+                    </div>
+                    @foreach (var p in _payments)
+                    {
+                        <div class="payments-row">
+                            <span class="mono">#@p.Id</span>
+                            <span>@FormatPrice(p.AmountCents, p.Currency)</span>
+                            <span class="status-chip @StatusClass(p.Status)">@p.Status</span>
+                            <span>@p.Reason</span>
+                            <span>@FormatDate(p.PaidAtUtc ?? p.CreatedAt)</span>
+                            <span>
+                                <button class="btn ghost tiny" type="button" @onclick="() => DownloadReceiptAsync(p.Id)" disabled="@_busy">
+                                    <span class="btn-icon" aria-hidden="true">?</span>
+                                    Скачать чек
+                                </button>
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+    }
+</main>
+}
+
+@if (_showExtendModal && _hasActiveSubscription)
+{
+    <div class="modal-backdrop" @onclick="CloseExtendModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-credit-card" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Продление подписки</h2>
+                        <p>Выберите срок и подтвердите продление.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseExtendModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="extend-grid">
+                <button class="chip" type="button" @onclick="() => SetExtendMonths(1)">1 мес</button>
+                <button class="chip" type="button" @onclick="() => SetExtendMonths(3)">3 мес</button>
+                <button class="chip" type="button" @onclick="() => SetExtendMonths(6)">6 мес</button>
+                <button class="chip" type="button" @onclick="() => SetExtendMonths(12)">12 мес</button>
+            </div>
+
+            <div class="field">
+                <label class="label">Срок продления (месяцев)</label>
+                <InputNumber class="input" @bind-Value="_extendMonths" />
+            </div>
+
+            <div class="actions">
+                <button class="btn primary" type="button" @onclick="ExtendAsync" disabled="@_busy">Продлить</button>
+                <button class="btn ghost" type="button" @onclick="CloseExtendModal" disabled="@_busy">Отмена</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _hasActiveSubscription = true;
+    private bool _showExtendModal;
+    private int _extendMonths = 1;
+    private List<PaymentReadDto> _payments = new();
+    private CurrentSubscriptionDto? _current;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private const int OwnerRoleId = 1;
+    private bool _accessChecked;
+    private bool _allowAccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allowAccess = await RoleAccess.GetCurrentRoleIdAsync() == OwnerRoleId;
+        _accessChecked = true;
+        if (!_allowAccess)
+        {
+            Nav.NavigateTo("/workplace", replace: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _hasActiveSubscription = await SubsVm.HasActiveAsync();
+        if (!_hasActiveSubscription)
+        {
+            _current = null;
+            _payments.Clear();
+            _loading = false;
+            return;
+        }
+
+        _current = await SubsVm.GetCurrentAsync();
+        _payments = (await SubsVm.GetPaymentsAsync(page: 1, pageSize: 50)).ToList();
+        _loading = false;
+    }
+
+    private async Task ReloadAsync()
+    {
+        _alert = null;
+        await LoadAsync();
+    }
+
+    private void OpenExtendModal() => _showExtendModal = true;
+    private void CloseExtendModal() => _showExtendModal = false;
+    private void SetExtendMonths(int months) => _extendMonths = months;
+
+    private async Task ExtendAsync()
+    {
+        _alert = null;
+        if (_extendMonths <= 0)
+        {
+            _alertKind = "err";
+            _alert = "Срок продления должен быть больше 0 месяцев.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var res = await SubsVm.ExtendAsync(_extendMonths);
+            _alertKind = res.Success ? "ok" : "err";
+            _alert = res.Message ?? res.Error ?? "Не удалось продлить подписку.";
+            if (res.Success)
+            {
+                _showExtendModal = false;
+                await LoadAsync();
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CancelAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await SubsVm.CancelAsync();
+            _alertKind = res.Success ? "ok" : "err";
+            _alert = res.Message ?? res.Error ?? "Не удалось отменить подписку.";
+            if (res.Success)
+                await LoadAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadReceiptAsync(long paymentId)
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var (result, file) = await SubsVm.DownloadReceiptAsync(paymentId);
+            if (!result.Success || file is null)
+            {
+                _alertKind = "err";
+                _alert = "Не удалось скачать чек.";
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(file.Content);
+            await JS.InvokeVoidAsync("steptreckDownload.saveFile", file.FileName, file.ContentType, base64);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FormatPrice(int? cents, string? currency)
+    {
+        if (!cents.HasValue) return "—";
+        var value = cents.Value / 100.0m;
+        var cur = string.IsNullOrWhiteSpace(currency) ? "RUB" : currency;
+        return $"{value:0.##} {cur}";
+    }
+
+    private static string FormatDate(DateTime? value)
+        => value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string ValueOrInfinity(int? value) => value.HasValue ? value.Value.ToString() : "?";
+
+    private static int Percent(int used, int? limit)
+    {
+        if (!limit.HasValue || limit.Value <= 0) return 0;
+        var percent = (int)Math.Round((double)used / limit.Value * 100);
+        return Math.Clamp(percent, 0, 100);
+    }
+
+    private static string UsageClass(int used, int? limit)
+    {
+        if (!limit.HasValue || limit.Value <= 0) return "ok";
+        var ratio = (double)used / limit.Value;
+        if (ratio >= 0.95) return "danger";
+        if (ratio >= 0.8) return "warn";
+        return "ok";
+    }
+
+    private static string StatusClass(string? status)
+    {
+        if (string.IsNullOrWhiteSpace(status)) return "neutral";
+        var s = status.Trim().ToLowerInvariant();
+        if (s.Contains("paid") || s.Contains("success")) return "ok";
+        if (s.Contains("fail") || s.Contains("error")) return "danger";
+        return "warn";
+    }
+}

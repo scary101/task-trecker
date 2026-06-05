@@ -1,0 +1,171 @@
+@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/dashboard"
+@using steptreck.Domain.DTOs.DashboardDTOs
+@inject steptreck.Web.ViewModel.ProjectTeamDashboardViewModel DashboardVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<PageTitle>Дашборд команды — StepTreck</PageTitle>
+
+<main class="page team-dashboard-page analytics-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="dashboard"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        @if (_loading)
+        {
+            <div class="analytics-empty card">Загружаем дашборд команды...</div>
+        }
+        else if (_dashboard is null)
+        {
+            <div class="analytics-empty card">Не удалось загрузить аналитику команды.</div>
+        }
+        else
+        {
+            <section class="analytics-hero card">
+                <div>
+                    <div class="analytics-kicker">@_dashboard.ProjectName</div>
+                    <h1>@_dashboard.TeamName</h1>
+                    <p>@(!string.IsNullOrWhiteSpace(_dashboard.TeamDescription) ? _dashboard.TeamDescription : $"Руководитель: {_dashboard.LeadFullName ?? "не назначен"}.")</p>
+                </div>
+                <div class="score-orbit @ScoreClass(_dashboard.Health.TeamPulse)">
+                    <span>Team Pulse</span>
+                    <strong>@_dashboard.Health.TeamPulse</strong>
+                </div>
+            </section>
+
+            <section class="analytics-kpis">
+                <article class="analytics-kpi card">
+                    <span>Bus Factor Risk</span>
+                    <strong>@_dashboard.Health.BusFactorRisk%</strong>
+                    <small>доля активных задач у самого загруженного участника</small>
+                </article>
+                <article class="analytics-kpi card">
+                    <span>Баланс нагрузки</span>
+                    <strong>@_dashboard.Health.WorkloadBalance%</strong>
+                    <small>насколько ровно задачи распределены внутри команды</small>
+                </article>
+                <article class="analytics-kpi card">
+                    <span>Средний trust</span>
+                    <strong>@_dashboard.Health.AverageTrust</strong>
+                    <small>здоровье исполнения команды</small>
+                </article>
+                <article class="analytics-kpi card">
+                    <span>В срок</span>
+                    <strong>@_dashboard.Health.OnTimeRate%</strong>
+                    <small>закрытые против missed</small>
+                </article>
+            </section>
+
+            <section class="analytics-grid">
+                <article class="analytics-panel card">
+                    <h2>Задачи</h2>
+                    <div class="metric-list">
+                        <div><span>Активные</span><strong>@_dashboard.Tasks.ActiveTasks</strong></div>
+                        <div><span>Готово</span><strong>@_dashboard.Tasks.DoneTasks</strong></div>
+                        <div><span>Просрочено</span><strong class="@ToneClass(_dashboard.Tasks.OverdueTasks)">@_dashboard.Tasks.OverdueTasks</strong></div>
+                        <div><span>Сегодня</span><strong>@_dashboard.Tasks.DueTodayTasks</strong></div>
+                        <div><span>Без ответственного</span><strong class="@ToneClass(_dashboard.Tasks.UnassignedTasks)">@_dashboard.Tasks.UnassignedTasks</strong></div>
+                    </div>
+                </article>
+
+                <article class="analytics-panel card">
+                    <h2>Работа</h2>
+                    <div class="metric-list">
+                        <div><span>Активные сессии</span><strong>@_dashboard.Workload.ActiveSessions</strong></div>
+                        <div><span>В работе</span><strong>@_dashboard.Workload.WorkingSessions</strong></div>
+                        <div><span>Пауза</span><strong>@_dashboard.Workload.PausedSessions</strong></div>
+                        <div><span>Сегодня</span><strong>@FormatDuration(_dashboard.Workload.WorkedSecondsToday)</strong></div>
+                        <div><span>7 дней</span><strong>@FormatDuration(_dashboard.Workload.WorkedSecondsLast7Days)</strong></div>
+                    </div>
+                </article>
+
+                <article class="analytics-panel card insights-panel">
+                    <h2>Что важно</h2>
+                    <div class="insight-list">
+                        @foreach (var insight in _dashboard.Insights)
+                        {
+                            <div class="insight-item">
+                                <i class="bi bi-lightning-charge" aria-hidden="true"></i>
+                                <span>@insight</span>
+                            </div>
+                        }
+                    </div>
+                </article>
+            </section>
+
+            <section class="analytics-section">
+                <div class="analytics-section-head">
+                    <h2>Нагрузка участников</h2>
+                    <p>Тут видно, кто перегружен, кто в риске и где концентрируются дедлайны.</p>
+                </div>
+                <div class="analytics-table">
+                    <div class="analytics-row head team-members">
+                        <span>Участник</span><span>Trust</span><span>Активные</span><span>Просрочено</span><span>Miss rate</span><span>Сессия</span>
+                    </div>
+                    @foreach (var member in _dashboard.Members)
+                    {
+                        <button class="analytics-row action team-members" type="button" @onclick="() => OpenMember(member.MemberId)">
+                            <span>@member.FullName</span>
+                            <span>@member.Trust</span>
+                            <span>@member.ActiveTasks</span>
+                            <span class="@ToneClass(member.OverdueTasks)">@member.OverdueTasks</span>
+                            <span>@member.MissRate%</span>
+                            <span>@(member.HasActiveSession ? "Активна" : "—")</span>
+                        </button>
+                    }
+                </div>
+            </section>
+        }
+    </section>
+</main>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private TeamDashboardDto? _dashboard;
+    private bool _loading = true;
+    private bool _roleReady;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _roleReady = true;
+        _loading = true;
+        _dashboard = await DashboardVm.GetTeamAsync(ProjectId, TeamId);
+        _loading = false;
+    }
+
+    private void OpenMember(int memberId) => Nav.NavigateTo($"/workplace/members/{memberId}");
+    private void GoToInfo() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+    private void GoToMembers() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+    private void GoToStats() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+    private void GoToTasks() => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private static string ToneClass(int value) => value > 0 ? "tone-risk" : "tone-ok";
+    private static string ScoreClass(decimal score) => score >= 75 ? "good" : score >= 55 ? "watch" : "risk";
+
+    private static string FormatDuration(long seconds)
+    {
+        if (seconds <= 0) return "0ч";
+        var ts = TimeSpan.FromSeconds(seconds);
+        return ts.TotalHours >= 1 ? $"{(int)ts.TotalHours}ч {ts.Minutes}м" : $"{ts.Minutes}м";
+    }
+}

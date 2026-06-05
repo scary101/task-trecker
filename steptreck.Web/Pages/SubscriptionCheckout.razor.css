@@ -1,0 +1,85 @@
+﻿.checkout-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.checkout-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.checkout-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.8fr);
+    gap: 20px;
+}
+
+.checkout-form {
+    padding: 20px;
+    display: grid;
+    gap: 16px;
+}
+
+.checkout-form h2 {
+    margin: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.hint {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.checkout-summary {
+    padding: 20px;
+    display: grid;
+    gap: 12px;
+    background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.08), var(--surface));
+    border: 1px solid rgba(var(--primary-rgb), 0.18);
+    height: fit-content;
+}
+
+.checkout-summary h3 {
+    margin: 0 0 8px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--text-secondary);
+}
+
+.summary-row strong {
+    color: var(--text-primary);
+}
+
+.summary-note {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+.checkout-empty {
+    padding: 18px;
+    color: var(--text-secondary);
+}
+

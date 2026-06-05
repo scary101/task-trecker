@@ -1,0 +1,74 @@
+﻿.project-files-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.files-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.files-empty {
+    padding: 16px;
+    color: var(--text-secondary);
+}
+
+.files-list {
+    display: grid;
+    gap: 12px;
+}
+
+.file-card {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-main {
+    display: grid;
+    gap: 6px;
+}
+
+.file-name {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.file-meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+
+.meta-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.file-upload input[type="file"] {
+    display: none;
+}
+

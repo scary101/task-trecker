@@ -1,0 +1,193 @@
+.plan-card[b-0qvgawlfbs] {
+    padding: 18px;
+    display: grid;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.plan-card:hover[b-0qvgawlfbs] {
+    transform: translateY(-2px);
+    border-color: rgba(var(--primary-rgb), 0.4);
+    box-shadow: 0 16px 30px rgba(var(--bg-main-rgb), 0.12);
+}
+
+.plan-card[b-0qvgawlfbs]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(var(--primary-rgb), 0.12), transparent 55%);
+    pointer-events: none;
+}
+
+.plan-ribbon[b-0qvgawlfbs] {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    transform: none;
+    z-index: 2;
+    background: var(--accent-soft);
+    color: var(--text-primary);
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
+    box-shadow: 0 8px 18px rgba(var(--bg-main-rgb), 0.12);
+}
+
+.plan-head[b-0qvgawlfbs] {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-right: 92px;
+}
+
+.plan-head h3[b-0qvgawlfbs] {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+}
+
+.plan-head > div[b-0qvgawlfbs] {
+    min-width: 0;
+}
+
+.plan-sub[b-0qvgawlfbs] {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+.plan-price[b-0qvgawlfbs] {
+    text-align: right;
+    min-width: 120px;
+}
+
+.price-value[b-0qvgawlfbs] {
+    font-size: clamp(16px, 2.6vw, 22px);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.price-label[b-0qvgawlfbs] {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.plan-limits[b-0qvgawlfbs] {
+    display: grid;
+    gap: 8px;
+}
+
+.plan-limits div[b-0qvgawlfbs] {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--text-secondary);
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: var(--bg-card-soft);
+}
+
+.plan-limits strong[b-0qvgawlfbs] {
+    color: var(--text-primary);
+}
+
+.plan-features[b-0qvgawlfbs] {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.feature-chip[b-0qvgawlfbs] {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+}
+
+.feature-chip.on[b-0qvgawlfbs] {
+    border-color: rgba(var(--success-rgb), 0.45);
+    color: var(--success);
+}
+
+.feature-chip.off[b-0qvgawlfbs] {
+    border-color: rgba(var(--danger-rgb), 0.45);
+    color: var(--danger);
+}
+
+.plan-actions[b-0qvgawlfbs] {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 520px) {
+    .plan-head[b-0qvgawlfbs] {
+        padding-right: 0;
+    }
+
+    .plan-price[b-0qvgawlfbs] {
+        text-align: left;
+        min-width: auto;
+    }
+}
+
+.plan-card.tier-starter[b-0qvgawlfbs] {
+    border-color: rgba(var(--info-rgb), 0.35);
+    background: linear-gradient(150deg, rgba(var(--info-rgb), 0.1), var(--surface));
+}
+
+.plan-card.tier-growth[b-0qvgawlfbs] {
+    border-color: rgba(var(--success-rgb), 0.35);
+    background: linear-gradient(150deg, rgba(var(--success-rgb), 0.1), var(--surface));
+}
+
+.plan-card.tier-pro[b-0qvgawlfbs] {
+    border-color: rgba(var(--warning-rgb), 0.35);
+    background: linear-gradient(150deg, rgba(var(--warning-rgb), 0.12), var(--surface));
+}
+
+.plan-card.tier-elite[b-0qvgawlfbs] {
+    border-color: rgba(var(--danger-rgb), 0.35);
+    background: linear-gradient(150deg, rgba(var(--danger-rgb), 0.12), var(--surface));
+}
+
+.plan-card.tier-starter .plan-ribbon[b-0qvgawlfbs] {
+    background: rgba(var(--info-rgb), 0.12);
+    color: var(--text-primary);
+    border-color: rgba(var(--info-rgb), 0.35);
+}
+
+.plan-card.tier-growth .plan-ribbon[b-0qvgawlfbs] {
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--text-primary);
+    border-color: rgba(var(--success-rgb), 0.35);
+}
+
+.plan-card.tier-pro .plan-ribbon[b-0qvgawlfbs] {
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--text-primary);
+    border-color: rgba(var(--warning-rgb), 0.35);
+}
+
+.plan-card.tier-elite .plan-ribbon[b-0qvgawlfbs] {
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--text-primary);
+    border-color: rgba(var(--danger-rgb), 0.35);
+}

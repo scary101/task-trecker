@@ -1,0 +1,34 @@
+@page "/workplace/projects/{ProjectId:int}/audit"
+@inject NavigationManager Nav
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page project-audit-page">
+    <section class="section">
+        <ProjectSectionTabs ProjectId="ProjectId" Active="audit" />
+
+        <AuditLogPanel Scope="project"
+                       ProjectId="ProjectId"
+                       Title="Журнал проекта"
+                       Subtitle="Изменения, связанные с этим проектом." />
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}");
+
+    private void GoToDashboard()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/dashboard");
+
+    private void GoToTeams()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/members");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/files");
+}

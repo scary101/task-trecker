@@ -1,0 +1,123 @@
+﻿@page "/workplace/notifications"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@using steptreck.Domain.DTOs
+@using System.Linq
+@inject steptreck.Web.ViewModel.NotificationsViewModel NotificationsVm
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject NavigationManager Nav
+
+<main class="page notif-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>Уведомления</h1>
+                <p class="section-subtitle">Все важные уведомления.</p>
+            </div>
+            <div class="notif-actions">
+                <button class="btn ghost" @onclick="Reload" disabled="@_loading">Обновить</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert @(_alertKind)">@_alert</div>
+        }
+
+        <section class="notif-grid">
+            @if (_loading)
+            {
+                <div class="notif-empty card">Загрузка уведомлений...</div>
+            }
+            else if (_notifications.Count == 0)
+            {
+                <div class="notif-empty card">Уведомлений пока нет.</div>
+            }
+            else
+            {
+                @foreach (var n in _notifications)
+                {
+                    <article class="notif-card card @(n.IsRead ? "" : "unread")">
+                        <div class="notif-card-text">@n.Text</div>
+                        <div class="notif-card-meta">
+                            <span>@FormatDate(n.CreatedAt)</span>
+                            @if (!n.IsRead)
+                            {
+                                <button class="btn ghost btn-compact" @onclick="() => MarkReadAsync(n)">Отметить прочитанным</button>
+                            }
+                        </div>
+                    </article>
+                }
+            }
+        </section>
+    </section>
+</main>
+
+@code {
+    private List<NotificationDto> _notifications = new();
+    private bool _loading = true;
+    private string? _alert;
+    private string _alertKind = "err";
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        await LoadAsync();
+    }
+        
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+        try
+        {
+            _notifications = await NotificationsVm.GetLatestAsync(50);
+        }
+        catch (Exception ex)
+        {
+            _alert = ex.Message;
+            _notifications = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task Reload()
+    {
+        await LoadAsync();
+    }
+
+    private async Task MarkReadAsync(NotificationDto dto)
+    {
+        if (dto.IsRead)
+            return;
+
+        var ok = await NotificationsVm.MarkReadAsync(dto.Id);
+        if (ok)
+            dto.IsRead = true;
+    }
+
+    private async Task MarkAllAsync()
+    {
+        if (_notifications.Count == 0)
+            return;
+
+        foreach (var n in _notifications.Where(x => !x.IsRead))
+        {
+            var ok = await NotificationsVm.MarkReadAsync(n.Id);
+            if (ok)
+                n.IsRead = true;
+        }
+    }
+
+    private static string FormatDate(DateTime value)
+    {
+        return value.ToString("dd.MM.yyyy HH:mm");
+    }
+}
+

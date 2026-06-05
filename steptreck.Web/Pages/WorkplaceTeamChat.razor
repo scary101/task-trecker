@@ -1,0 +1,1291 @@
+@page "/workplace/chats"
+@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/chat"
+@using steptreck.Domain.Constants
+@using steptreck.Domain.DTOs.ChatDTOs
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@using steptreck.Domain.DTOs.TeamDTOs.MemberDTOs
+@using Microsoft.JSInterop
+@inject steptreck.Web.ViewModel.ChatViewModel ChatVm
+@inject steptreck.Web.Services.ChatClient ChatClient
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+@implements IAsyncDisposable
+
+<PageTitle>Чаты команд — StepTreck</PageTitle>
+
+<main class="page team-chat-page owner-chats-page">
+    @if (ProjectId > 0 && TeamId > 0 && _roleReady && !_isOwner && !_isTeamLead && !_isEmployee)
+    {
+        <section class="section">
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="chat"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        </section>
+    }
+
+    <section class="owner-chat-shell">
+        <aside class="chat-list-panel">
+            <div class="chat-list-head">
+                <div>
+                    <h1>@(_isOwner ? "Чаты команд" : "Командный чат")</h1>
+                    <span>@(_isOwner ? $"{_chats.Count} активных каналов" : "Рабочее общение команды")</span>
+                </div>
+                <button class="chat-refresh" type="button" @onclick="ReloadChatsAsync" disabled="@_loadingChats" aria-label="Обновить">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            @if (_isOwner)
+            {
+                <label class="chat-search">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="search" placeholder="Поиск" @bind="_chatListQuery" @bind:event="oninput" />
+                </label>
+            }
+
+            <div class="chat-list">
+                @if (_loadingChats)
+                {
+                    <div class="chat-list-empty">Загружаем чаты...</div>
+                }
+                else if (FilteredChats.Count == 0)
+                {
+                    <div class="chat-list-empty">Чаты не найдены.</div>
+                }
+                else
+                {
+                    @foreach (var chat in FilteredChats)
+                    {
+                        <button class="chat-list-item @(chat.TeamId == _selectedTeamId ? "selected" : "")"
+                                type="button"
+                                @onclick="() => SelectChatAsync(chat.TeamId)">
+                            <span class="chat-avatar">@GetInitials(chat.TeamName)</span>
+                            <span class="chat-item-main">
+                                <span class="chat-item-title">@chat.TeamName</span>
+                                <span class="chat-item-preview">@TrimPreview(chat.LastMessageText)</span>
+                            </span>
+                            <span class="chat-item-side">
+                                <span>@FormatShortTime(chat.LastMessageAt)</span>
+                                @if (chat.UnreadCount > 0)
+                                {
+                                    <strong>@chat.UnreadCount</strong>
+                                }
+                            </span>
+                        </button>
+                    }
+                }
+            </div>
+        </aside>
+
+        <section class="chat-room-panel">
+            @if (_selectedChat is null)
+            {
+                <div class="chat-room-empty">
+                    <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                    <h2>Выберите чат</h2>
+                    <p>Слева отображаются доступные рабочие чаты команд.</p>
+                </div>
+            }
+            else
+            {
+                <header class="chat-room-head">
+                    <span class="chat-avatar large">@GetInitials(_selectedChat.TeamName)</span>
+                    <div>
+                        <h2>@_selectedChat.TeamName</h2>
+                        <p>@_selectedChat.ProjectName</p>
+                    </div>
+                    <div class="chat-head-actions">
+                        <button class="icon-btn ghost @(_searchOpen ? "active" : "")" type="button" aria-label="Поиск" @onclick="ToggleSearch">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </button>
+                        <button class="open-team-btn" type="button" @onclick="OpenTeam">
+                            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            <span>Команда</span>
+                        </button>
+                    </div>
+                </header>
+
+                @if (!string.IsNullOrWhiteSpace(_alert))
+                {
+                    <div class="alert @(_alertKind)">@_alert</div>
+                }
+
+                @if (_searchOpen)
+                {
+                    <div class="chat-search-panel">
+                        <label class="chat-search-field">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <input type="search"
+                                   value="@_searchQuery"
+                                   @oninput="OnSearchInput"
+                                   placeholder="Поиск по сообщениям" />
+                        </label>
+                        <div class="chat-search-meta">@SearchCounterText</div>
+                        <div class="chat-search-actions">
+                            <button type="button" title="Предыдущее" @onclick="SearchPreviousAsync" disabled="@(!_searchMatches.Any())">↑</button>
+                            <button type="button" title="Следующее" @onclick="SearchNextAsync" disabled="@(!_searchMatches.Any())">↓</button>
+                            <button type="button" @onclick="LoadMoreForSearchAsync" disabled="@(!_hasMore || _loadingMore)">
+                                @(_loadingMore ? "Ищем..." : "Глубже")
+                            </button>
+                            <button type="button" title="Закрыть поиск" @onclick="CloseSearch">×</button>
+                        </div>
+                    </div>
+                }
+
+                @if (PinnedMessage is not null)
+                {
+                    <div class="pinned-banner">
+                        <button class="pinned-main" type="button" @onclick="() => ScrollToMessageAsync(PinnedMessage.Id)">
+                            <span class="pinned-icon">📌</span>
+                            <span>
+                                <strong>Закрепленное сообщение</strong>
+                                <span>@TrimPreview(PinnedMessage.Text)</span>
+                            </span>
+                        </button>
+                        <button class="pinned-close" type="button" title="Открепить" @onclick="() => TogglePinAsync(PinnedMessage)">×</button>
+                    </div>
+                }
+
+                <div class="chat-room-stream" @ref="_streamRef">
+                    <div class="chat-stream-head">
+                        <button class="chat-history-btn" type="button" @onclick="LoadMoreAsync" disabled="@(!_hasMore || _loadingMore || _loadingMessages)">
+                            @(_loadingMore ? "Загружаем..." : _hasMore ? "Показать ещё" : "Больше сообщений нет")
+                        </button>
+                    </div>
+
+                    @if (_loadingMessages)
+                    {
+                        <div class="chat-room-empty compact">Загружаем сообщения...</div>
+                    }
+                    else if (_messages.Count == 0)
+                    {
+                        <div class="chat-room-empty compact">Пока нет сообщений. Начните разговор первым.</div>
+                    }
+                    else
+                    {
+                        DateTime? currentDay = null;
+                        @for (var i = 0; i < _messages.Count; i++)
+                        {
+                            var msg = _messages[i];
+                            var isMine = IsMine(msg);
+                            var showName = ShouldShowName(i);
+                            var showTime = ShouldShowTime(i);
+                            var grouped = IsGrouped(i);
+                            var localDay = msg.CreatedAt.ToLocalTime().Date;
+
+                            if (currentDay != localDay)
+                            {
+                                currentDay = localDay;
+                                <div class="chat-date-separator">
+                                    <span>@FormatDayLabel(localDay)</span>
+                                </div>
+                            }
+
+                            <article class="message-row @(isMine ? "me" : "other") @RoleClass(msg.Role) @(grouped ? "grouped" : "") @(msg.Id == _highlightedMessageId ? "highlighted" : "") @(msg.Id == CurrentSearchMessageId ? "search-current" : "") @(IsSearchMatch(msg.Id) ? "search-match" : "")"
+                                     data-message-id="@msg.Id"
+                                     @key="msg.Id">
+                                @if (!isMine)
+                                {
+                                    <div class="message-avatar @(showName ? "" : "hidden")">@GetInitials(msg.SenderName)</div>
+                                }
+
+                                <div class="message-stack">
+                                    @if (showName && !isMine)
+                                    {
+                                        <div class="message-sender">@msg.SenderName</div>
+                                    }
+
+                                    <div class="message-bubble" data-copy-text="@msg.Text">
+                                        <div class="message-tools">
+                                            @if (msg.IsPinned)
+                                            {
+                                                <span class="message-pin" title="Закреплено">📌</span>
+                                            }
+                                            <button class="message-menu-btn" type="button" title="Действия" @onclick="() => ToggleMessageMenu(msg.Id)">⋯</button>
+                                        </div>
+
+                                        @if (msg.ReplyTo is not null || msg.ReplyToMessageId.HasValue)
+                                        {
+                                            <button class="reply-preview" type="button" @onclick="() => ScrollToMessageAsync(msg.ReplyToMessageId ?? msg.ReplyTo?.Id ?? 0)">
+                                                <strong>@(msg.ReplyTo?.SenderName ?? "Сообщение")</strong>
+                                                <span>@TrimPreview(msg.ReplyTo?.Text)</span>
+                                            </button>
+                                        }
+
+                                        <div class="message-text">
+                                            @foreach (var part in GetMessageTextParts(msg.Text))
+                                            {
+                                                if (part.MemberId.HasValue)
+                                                {
+                                                    <button type="button" class="mention-link" @onclick="() => OpenMemberProfile(part.MemberId.Value)">@part.Text</button>
+                                                }
+                                                else
+                                                {
+                                                    @part.Text
+                                                }
+                                            }
+                                        </div>
+
+                                        @if (msg.Reactions.Count > 0)
+                                        {
+                                            <div class="reaction-summary">
+                                                @foreach (var reaction in msg.Reactions.Where(r => r.Count > 0))
+                                                {
+                                                    <button class="reaction-chip @(reaction.ReactedByMe ? "mine" : "")" type="button" @onclick="() => ToggleReactionAsync(msg, reaction.Emoji)">
+                                                        <span>@reaction.Emoji</span>
+                                                        <strong>@reaction.Count</strong>
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+
+                                        @if (showTime)
+                                        {
+                                            <div class="message-time message-time--inside">@FormatTimestamp(msg.CreatedAt)</div>
+                                        }
+
+                                        @if (_openMessageMenuId == msg.Id)
+                                        {
+                                            <div class="message-actions-menu">
+                                                <div class="reaction-palette" aria-label="Реакции">
+                                                    @foreach (var emoji in QuickReactions)
+                                                    {
+                                                        <button class="reaction-option" type="button" @onclick="() => ToggleReactionAsync(msg, emoji)">@emoji</button>
+                                                    }
+                                                </div>
+                                                <button type="button" @onclick="() => StartReply(msg)">Ответить</button>
+                                                <button type="button" @onclick="() => CopyMessageAsync(msg.Text)">Копировать</button>
+                                                <button type="button" @onclick="() => TogglePinAsync(msg)">@(msg.IsPinned ? "Открепить" : "Закрепить")</button>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </article>
+                        }
+                    }
+                </div>
+
+                <div class="chat-compose-wrap">
+                    <div class="chat-compose">
+                        @if (_visibleMentionSuggestions.Count > 0)
+                        {
+                            <div class="mention-panel">
+                                @foreach (var suggestion in _visibleMentionSuggestions)
+                                {
+                                    <button type="button" class="mention-option" @onclick="() => ApplyMentionSuggestion(suggestion)">
+                                        <span>@(suggestion.Username == "all" ? "@" : GetInitials(suggestion.Label))</span>
+                                        <strong>@suggestion.Label</strong>
+                                        <small>@suggestion.Subtitle</small>
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        @if (_replyToMessage is not null)
+                        {
+                            <div class="compose-reply">
+                                <div>
+                                    <strong>Ответ: @_replyToMessage.SenderName</strong>
+                                    <span>@TrimPreview(_replyToMessage.Text)</span>
+                                </div>
+                                <button type="button" title="Отменить ответ" @onclick="ClearReply">×</button>
+                            </div>
+                        }
+
+                        <div class="compose-main">
+                            <div class="compose-input">
+                                <button class="emoji-btn" type="button" aria-label="Открыть панель эмодзи" aria-expanded="false" @ref="_emojiButtonEl">
+                                    <i class="bi bi-emoji-smile" aria-hidden="true"></i>
+                                </button>
+                                <div class="emoji-panel" hidden @ref="_emojiPanelEl">
+                                    <div class="emoji-panel-title">Смайлики</div>
+                                    <div class="emoji-grid">
+                                        @foreach (var emoji in EmojiPalette)
+                                        {
+                                            <button class="emoji-chip" type="button" data-emoji="@emoji" aria-label="Добавить @emoji">
+                                                @emoji
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <textarea class="input"
+                                          @bind="_messageText"
+                                          @bind:event="oninput"
+                                          @bind:after="AfterComposerInput"
+                                          maxlength="@ChatConstants.MaxMessageTextLength"
+                                          rows="1"
+                                          placeholder="Напишите сообщение..."
+                                          @ref="_composerEl">
+                                </textarea>
+                            </div>
+                            <button class="send-btn" type="button" @onclick="SendAsync" disabled="@_sending" aria-label="Отправить сообщение">
+                                <i class="bi bi-send-fill" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="compose-actions">
+                            <div class="compose-hint">Enter — отправить, Shift+Enter — новая строка</div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </section>
+    </section>
+</main>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private readonly List<ChatListItemDto> _chats = new();
+    private readonly List<ChatMessageDto> _messages = new();
+    private readonly List<MentionSuggestion> _mentionSuggestions = new();
+    private readonly List<MentionSuggestion> _visibleMentionSuggestions = new();
+    private readonly Dictionary<string, int> _mentionMemberIds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly List<long> _searchMatches = new();
+    private bool _loadingChats = true;
+    private bool _loadingMessages = true;
+    private bool _loadingMore;
+    private bool _sending;
+    private bool _connected;
+    private bool _hasMore = true;
+    private bool _searchOpen;
+    private bool _pendingScrollToBottom;
+    private bool _composerInteropBound;
+    private bool _roleReady;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private int? _selectedTeamId;
+    private int? _currentMemberId;
+    private long? _beforeId;
+    private long? _openMessageMenuId;
+    private long? _highlightedMessageId;
+    private int _searchIndex = -1;
+    private string _chatListQuery = string.Empty;
+    private string _messageText = string.Empty;
+    private string _searchQuery = string.Empty;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private ChatMessageDto? _replyToMessage;
+    private MentionQuery? _mentionQuery;
+    private IDisposable? _subscription;
+    private IDisposable? _reactionSubscription;
+    private IDisposable? _pinSubscription;
+    private DotNetObjectReference<WorkplaceTeamChat>? _composerHandle;
+    private ElementReference _streamRef;
+    private ElementReference _composerEl;
+    private ElementReference _emojiButtonEl;
+    private ElementReference _emojiPanelEl;
+
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int TimeGroupGapMinutes = 7;
+    private static readonly string[] QuickReactions = ["🔥", "👍", "👎", "🤡"];
+    private static readonly string[] EmojiPalette =
+    [
+        "😀", "😁", "😂", "🤣", "😊", "😍", "😘", "😎", "🤔", "😴",
+        "🙌", "👏", "👍", "👎", "👊", "✌️", "🙏", "🔥", "💯", "✅",
+        "❌", "⚡", "🎉", "🚀", "💡", "📌", "📎", "📅", "💬", "📢",
+        "❤️", "🧡", "💛", "💚", "💙", "💜", "🤝", "👀", "😅", "🤯"
+    ];
+
+    private ChatListItemDto? _selectedChat => _chats.FirstOrDefault(x => x.TeamId == _selectedTeamId);
+
+    private List<ChatListItemDto> FilteredChats => _chats
+        .Where(c => string.IsNullOrWhiteSpace(_chatListQuery) ||
+                    c.TeamName.Contains(_chatListQuery, StringComparison.OrdinalIgnoreCase) ||
+                    c.ProjectName.Contains(_chatListQuery, StringComparison.OrdinalIgnoreCase))
+        .OrderByDescending(c => c.LastMessageAt ?? DateTime.MinValue)
+        .ToList();
+
+    private ChatMessageDto? PinnedMessage
+        => _messages.LastOrDefault(message => message.IsPinned);
+
+    private long? CurrentSearchMessageId
+        => _searchIndex >= 0 && _searchIndex < _searchMatches.Count
+            ? _searchMatches[_searchIndex]
+            : null;
+
+    private string SearchCounterText
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchQuery))
+                return "Введите запрос";
+            if (_searchMatches.Count == 0)
+                return _hasMore ? "В загруженных сообщениях нет" : "Ничего не найдено";
+            return $"{_searchIndex + 1} из {_searchMatches.Count}";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _roleReady = true;
+        var profile = await MembersVm.GetMyProfileAsync();
+        _currentMemberId = profile?.Id;
+
+        await EnsureConnectedAsync();
+        await LoadChatsAsync(preferredTeamId: TeamId > 0 ? TeamId : null);
+    }
+
+    private async Task ReloadChatsAsync()
+        => await LoadChatsAsync(_selectedTeamId);
+
+    private async Task LoadChatsAsync(int? preferredTeamId = null)
+    {
+        _loadingChats = true;
+        var chats = await ChatVm.GetChatsAsync();
+
+        if (!_isOwner)
+        {
+            if (preferredTeamId.HasValue)
+                chats = chats.Where(x => x.TeamId == preferredTeamId.Value).ToList();
+            else if (chats.Count > 1)
+                chats = chats.Take(1).ToList();
+
+            if (chats.Count == 0 && preferredTeamId.HasValue)
+            {
+                var team = await TeamsVm.GetTeamAsync(preferredTeamId.Value);
+                if (team is not null)
+                {
+                    chats.Add(new ChatListItemDto
+                    {
+                        TeamId = team.Id,
+                        ProjectId = team.ProjectId,
+                        TeamName = team.Name,
+                        ProjectName = $"Проект #{team.ProjectId}"
+                    });
+                }
+            }
+        }
+
+        _chats.Clear();
+        _chats.AddRange(chats);
+        _loadingChats = false;
+
+        var nextTeamId = preferredTeamId.HasValue && _chats.Any(x => x.TeamId == preferredTeamId.Value)
+            ? preferredTeamId.Value
+            : _chats.FirstOrDefault()?.TeamId;
+
+        if (nextTeamId.HasValue)
+            await SelectChatAsync(nextTeamId.Value);
+        else
+            _loadingMessages = false;
+    }
+
+    private async Task SelectChatAsync(int teamId)
+    {
+        if (_selectedTeamId == teamId && !_loadingMessages && _messages.Count > 0)
+            return;
+
+        _selectedTeamId = teamId;
+        _loadingMessages = true;
+        _composerInteropBound = false;
+        _messages.Clear();
+        _mentionSuggestions.Clear();
+        _visibleMentionSuggestions.Clear();
+        _mentionMemberIds.Clear();
+        _replyToMessage = null;
+        _mentionQuery = null;
+        _openMessageMenuId = null;
+        _searchMatches.Clear();
+        _searchIndex = -1;
+        _beforeId = null;
+        _hasMore = true;
+        _alert = null;
+
+        var selected = _selectedChat;
+        if (selected is not null)
+        {
+            TeamId = selected.TeamId;
+            ProjectId = selected.ProjectId;
+        }
+
+        await LoadMoreAsync();
+        await LoadMentionsAsync(teamId);
+        _loadingMessages = false;
+        RequestScrollToBottom();
+    }
+
+    private async Task LoadMentionsAsync(int teamId)
+    {
+        var usernames = await ChatVm.GetTeamUsernamesAsync(teamId);
+        var members = new List<TeamMemberDto>();
+        try
+        {
+            members = await TeamsVm.GetTeamMembersAsync(teamId);
+        }
+        catch
+        {
+        }
+
+        var memberNames = members.ToDictionary(member => member.MemberId, member => member.FullName);
+        foreach (var item in usernames.Where(item => !string.IsNullOrWhiteSpace(item.Username)))
+        {
+            var username = item.Username.Trim().TrimStart('@');
+            var label = memberNames.TryGetValue(item.MemberId, out var fullName) && !string.IsNullOrWhiteSpace(fullName)
+                ? fullName
+                : $"@{username}";
+            _mentionSuggestions.Add(new MentionSuggestion(username, label, $"@{username}"));
+            _mentionMemberIds[username] = item.MemberId;
+        }
+    }
+
+    private async Task EnsureConnectedAsync()
+    {
+        if (_connected)
+            return;
+
+        try
+        {
+            await ChatClient.StartAsync();
+            _subscription?.Dispose();
+            _reactionSubscription?.Dispose();
+            _pinSubscription?.Dispose();
+
+            _subscription = ChatClient.OnNewMessage(msg =>
+            {
+                _ = InvokeAsync(async () =>
+                {
+                    var chat = _chats.FirstOrDefault(x => x.TeamId == msg.TeamId);
+                    if (chat is not null)
+                    {
+                        chat.LastMessageText = msg.Text;
+                        chat.LastMessageAt = msg.CreatedAt;
+                    }
+
+                    if (_selectedTeamId != msg.TeamId || _messages.Any(m => m.Id == msg.Id))
+                    {
+                        StateHasChanged();
+                        return;
+                    }
+
+                    var nearBottom = true;
+                    try
+                    {
+                        nearBottom = await JS.InvokeAsync<bool>("steptreckChat.isNearBottom", _streamRef);
+                    }
+                    catch
+                    {
+                    }
+
+                    _messages.Add(msg);
+                    _messages.Sort((a, b) => a.Id.CompareTo(b.Id));
+                    RefreshSearchMatches(keepCurrent: true);
+                    if (nearBottom)
+                        RequestScrollToBottom();
+                    StateHasChanged();
+                });
+            });
+
+            _reactionSubscription = ChatClient.OnReactionChanged(dto =>
+            {
+                _ = InvokeAsync(() =>
+                {
+                    if (_selectedTeamId != dto.TeamId)
+                        return;
+                    ApplyReactionChanged(dto);
+                    StateHasChanged();
+                });
+            });
+
+            _pinSubscription = ChatClient.OnPinChanged(dto =>
+            {
+                _ = InvokeAsync(() =>
+                {
+                    if (_selectedTeamId != dto.TeamId)
+                        return;
+                    ApplyPinChanged(dto);
+                    StateHasChanged();
+                });
+            });
+
+            _connected = true;
+        }
+        catch (Exception ex)
+        {
+            _alertKind = "err";
+            _alert = $"SignalR connect failed: {ex.GetType().Name}: {ex.Message}";
+        }
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        if (_loadingMore || !_selectedTeamId.HasValue)
+            return;
+
+        _loadingMore = true;
+        var items = await ChatVm.GetMessagesAsync(_selectedTeamId.Value, _beforeId, 50);
+        items.Sort((a, b) => a.Id.CompareTo(b.Id));
+
+        if (items.Count == 0)
+        {
+            _hasMore = false;
+            _loadingMore = false;
+            return;
+        }
+
+        _messages.InsertRange(0, items);
+        _beforeId = _messages.First().Id;
+        if (items.Count < 50)
+            _hasMore = false;
+
+        _loadingMore = false;
+        RefreshSearchMatches(keepCurrent: true);
+    }
+
+    private async Task SendAsync()
+    {
+        if (_sending || !_selectedTeamId.HasValue)
+            return;
+
+        var text = _messageText.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        if (text.Length > ChatConstants.MaxMessageTextLength)
+        {
+            _alertKind = "err";
+            _alert = ChatMessageTooLongText();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _sending = true;
+        _alert = null;
+        try
+        {
+            await EnsureConnectedAsync();
+            await ChatClient.SendMessage(_selectedTeamId.Value, text, _replyToMessage?.Id);
+
+            _messageText = string.Empty;
+            _replyToMessage = null;
+            _mentionQuery = null;
+            _visibleMentionSuggestions.Clear();
+            await JS.InvokeVoidAsync("steptreckChat.clearComposer", _composerEl);
+            RequestScrollToBottom();
+        }
+        catch (Exception ex)
+        {
+            _alertKind = "err";
+            _alert = ResolveSendErrorMessage(ex);
+        }
+        finally
+        {
+            _sending = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string ResolveSendErrorMessage(Exception ex)
+    {
+        var message = ex.Message ?? string.Empty;
+
+        if (IsChatMessageTooLongError(message))
+            return ChatMessageTooLongText();
+
+        return "Не удалось отправить сообщение. Попробуйте ещё раз.";
+    }
+
+    private static bool IsChatMessageTooLongError(string message)
+        => message.Contains("Сообщение слишком длинное", StringComparison.OrdinalIgnoreCase) ||
+           message.Contains("Connection closed with an error", StringComparison.OrdinalIgnoreCase) ||
+           message.Contains("server closed the connection", StringComparison.OrdinalIgnoreCase) ||
+           message.Contains("Maximum message size", StringComparison.OrdinalIgnoreCase);
+
+    private static string ChatMessageTooLongText()
+        => $"Сообщение слишком длинное. Максимум {ChatConstants.MaxMessageTextLength} символов.";
+
+    private async Task AfterComposerInput()
+    {
+        UpdateMentionSuggestions();
+        await JS.InvokeVoidAsync("steptreckChat.autosize", _composerEl);
+    }
+
+    [JSInvokable]
+    public async Task SendFromComposer()
+    {
+        _messageText = _messageText.TrimEnd('\r', '\n');
+        await SendAsync();
+    }
+
+    private void ToggleMessageMenu(long messageId)
+        => _openMessageMenuId = _openMessageMenuId == messageId ? null : messageId;
+
+    private void ToggleSearch()
+    {
+        _searchOpen = !_searchOpen;
+        if (_searchOpen)
+        {
+            RefreshSearchMatches(keepCurrent: true);
+            _openMessageMenuId = null;
+            return;
+        }
+
+        CloseSearch();
+    }
+
+    private void CloseSearch()
+    {
+        _searchOpen = false;
+        _searchQuery = string.Empty;
+        _searchMatches.Clear();
+        _searchIndex = -1;
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs args)
+    {
+        _searchQuery = args.Value?.ToString() ?? string.Empty;
+        RefreshSearchMatches(keepCurrent: false);
+        if (_searchMatches.Count > 0)
+            await ScrollToCurrentSearchAsync();
+    }
+
+    private async Task SearchNextAsync()
+    {
+        if (_searchMatches.Count == 0)
+            return;
+        _searchIndex = (_searchIndex + 1) % _searchMatches.Count;
+        await ScrollToCurrentSearchAsync();
+    }
+
+    private async Task SearchPreviousAsync()
+    {
+        if (_searchMatches.Count == 0)
+            return;
+        _searchIndex = _searchIndex <= 0 ? _searchMatches.Count - 1 : _searchIndex - 1;
+        await ScrollToCurrentSearchAsync();
+    }
+
+    private async Task LoadMoreForSearchAsync()
+    {
+        await LoadMoreAsync();
+        RefreshSearchMatches(keepCurrent: true);
+        if (_searchMatches.Count > 0)
+            await ScrollToCurrentSearchAsync();
+    }
+
+    private async Task ScrollToCurrentSearchAsync()
+    {
+        if (CurrentSearchMessageId is { } messageId)
+            await ScrollToMessageAsync(messageId);
+    }
+
+    private void RefreshSearchMatches(bool keepCurrent)
+    {
+        var current = keepCurrent ? CurrentSearchMessageId : null;
+        _searchMatches.Clear();
+        var query = _searchQuery.Trim();
+
+        if (query.Length < 2)
+        {
+            _searchIndex = -1;
+            return;
+        }
+
+        _searchMatches.AddRange(_messages
+            .Where(message =>
+                message.Text.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                message.SenderName.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                (message.ReplyTo?.Text?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Select(message => message.Id));
+
+        if (_searchMatches.Count == 0)
+        {
+            _searchIndex = -1;
+            return;
+        }
+
+        var currentIndex = current.HasValue ? _searchMatches.IndexOf(current.Value) : -1;
+        _searchIndex = currentIndex >= 0 ? currentIndex : _searchMatches.Count - 1;
+    }
+
+    private bool IsSearchMatch(long messageId)
+        => _searchMatches.Contains(messageId);
+
+    private void StartReply(ChatMessageDto message)
+    {
+        _replyToMessage = message;
+        _openMessageMenuId = null;
+        _ = JS.InvokeVoidAsync("steptreckChat.focusComposer", _composerEl);
+    }
+
+    private void ClearReply()
+        => _replyToMessage = null;
+
+    private async Task CopyMessageAsync(string text)
+    {
+        _openMessageMenuId = null;
+        await JS.InvokeVoidAsync("steptreckChat.copyText", text);
+    }
+
+    private async Task ToggleReactionAsync(ChatMessageDto message, string emoji)
+    {
+        _openMessageMenuId = null;
+        var previous = message.Reactions.Select(CloneReaction).ToList();
+        message.Reactions = ToggleReactionState(message.Reactions, emoji);
+
+        try
+        {
+            await EnsureConnectedAsync();
+            await ChatClient.ToggleReaction(message.Id, emoji);
+        }
+        catch (Exception ex)
+        {
+            message.Reactions = previous;
+            _alertKind = "err";
+            _alert = $"Не удалось поставить реакцию: {ex.Message}";
+        }
+    }
+
+    private async Task TogglePinAsync(ChatMessageDto message)
+    {
+        _openMessageMenuId = null;
+        var previous = _messages.Select(CloneMessage).ToList();
+        ApplyLocalPin(message.Id, !message.IsPinned);
+
+        try
+        {
+            await EnsureConnectedAsync();
+            await ChatClient.TogglePinMessage(message.Id);
+        }
+        catch (Exception ex)
+        {
+            _messages.Clear();
+            _messages.AddRange(previous);
+            _alertKind = "err";
+            _alert = $"Не удалось изменить закрепление: {ex.Message}";
+        }
+    }
+
+    private void ApplyReactionChanged(ChatReactionChangedDto dto)
+    {
+        var message = _messages.FirstOrDefault(item => item.Id == dto.MessageId);
+        if (message is null)
+            return;
+
+        var reaction = message.Reactions.FirstOrDefault(item => item.Emoji == dto.Emoji);
+        if (dto.Count <= 0)
+        {
+            if (reaction is not null)
+                message.Reactions.Remove(reaction);
+            return;
+        }
+
+        var isMine = _currentMemberId.HasValue && dto.MemberId == _currentMemberId.Value
+            ? dto.IsAdded
+            : reaction?.ReactedByMe == true;
+
+        if (reaction is null)
+        {
+            message.Reactions.Add(new ChatReactionDto
+            {
+                Emoji = dto.Emoji,
+                Count = dto.Count,
+                ReactedByMe = isMine
+            });
+        }
+        else
+        {
+            reaction.Count = dto.Count;
+            reaction.ReactedByMe = isMine;
+        }
+    }
+
+    private void ApplyPinChanged(ChatPinChangedDto dto)
+        => ApplyLocalPin(dto.MessageId, dto.IsPinned, dto.PinnedAt, dto.PinnedByMemberId);
+
+    private void ApplyLocalPin(long messageId, bool isPinned, DateTime? pinnedAt = null, int? pinnedByMemberId = null)
+    {
+        foreach (var item in _messages)
+        {
+            if (isPinned && item.Id != messageId && item.IsPinned)
+            {
+                item.IsPinned = false;
+                item.PinnedAt = null;
+                item.PinnedByMemberId = null;
+                continue;
+            }
+
+            if (item.Id == messageId)
+            {
+                item.IsPinned = isPinned;
+                item.PinnedAt = isPinned ? pinnedAt ?? DateTime.UtcNow : null;
+                item.PinnedByMemberId = isPinned ? pinnedByMemberId ?? _currentMemberId : null;
+            }
+        }
+    }
+
+    private List<ChatReactionDto> ToggleReactionState(List<ChatReactionDto> reactions, string emoji)
+    {
+        var updated = reactions.Select(CloneReaction).ToList();
+        var reaction = updated.FirstOrDefault(item => item.Emoji == emoji);
+        if (reaction is null)
+        {
+            updated.Add(new ChatReactionDto { Emoji = emoji, Count = 1, ReactedByMe = true });
+        }
+        else if (reaction.ReactedByMe)
+        {
+            reaction.Count--;
+            reaction.ReactedByMe = false;
+            if (reaction.Count <= 0)
+                updated.Remove(reaction);
+        }
+        else
+        {
+            reaction.Count++;
+            reaction.ReactedByMe = true;
+        }
+
+        return updated
+            .OrderBy(item => Array.IndexOf(QuickReactions, item.Emoji) < 0 ? int.MaxValue : Array.IndexOf(QuickReactions, item.Emoji))
+            .ThenBy(item => item.Emoji)
+            .ToList();
+    }
+
+    private static ChatReactionDto CloneReaction(ChatReactionDto reaction)
+        => new()
+        {
+            Emoji = reaction.Emoji,
+            Count = reaction.Count,
+            ReactedByMe = reaction.ReactedByMe
+        };
+
+    private static ChatMessageDto CloneMessage(ChatMessageDto message)
+        => new()
+        {
+            Id = message.Id,
+            TeamId = message.TeamId,
+            SenderMemberId = message.SenderMemberId,
+            SenderName = message.SenderName,
+            Text = message.Text,
+            Role = message.Role,
+            CreatedAt = message.CreatedAt,
+            IsPinned = message.IsPinned,
+            PinnedAt = message.PinnedAt,
+            PinnedByMemberId = message.PinnedByMemberId,
+            ReplyToMessageId = message.ReplyToMessageId,
+            ReplyTo = message.ReplyTo,
+            Reactions = message.Reactions.Select(CloneReaction).ToList()
+        };
+
+    private async Task ScrollToMessageAsync(long messageId)
+    {
+        if (messageId <= 0)
+            return;
+
+        while (!_messages.Any(item => item.Id == messageId) && _hasMore && !_loadingMore)
+            await LoadMoreAsync();
+
+        await JS.InvokeVoidAsync("steptreckChat.scrollToMessage", _streamRef, messageId);
+        _highlightedMessageId = messageId;
+        StateHasChanged();
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1600);
+            await InvokeAsync(() =>
+            {
+                if (_highlightedMessageId == messageId)
+                {
+                    _highlightedMessageId = null;
+                    StateHasChanged();
+                }
+            });
+        });
+    }
+
+    private bool IsMine(ChatMessageDto msg)
+        => _currentMemberId.HasValue && msg.SenderMemberId == _currentMemberId.Value;
+
+    private static string RoleClass(int roleId) => roleId switch
+    {
+        OwnerRoleId => "role-owner",
+        TeamLeadRoleId => "role-teamlead",
+        _ => "role-employee"
+    };
+
+    private bool ShouldShowName(int index)
+    {
+        if (index <= 0) return true;
+        var current = _messages[index];
+        var prev = _messages[index - 1];
+        if (current.SenderMemberId != prev.SenderMemberId) return true;
+        return GetGapMinutes(prev.CreatedAt, current.CreatedAt) > TimeGroupGapMinutes;
+    }
+
+    private bool ShouldShowTime(int index)
+    {
+        if (index <= 0) return true;
+        var current = _messages[index];
+        var prev = _messages[index - 1];
+        if (current.SenderMemberId != prev.SenderMemberId) return true;
+        return GetGapMinutes(prev.CreatedAt, current.CreatedAt) > TimeGroupGapMinutes;
+    }
+
+    private bool IsGrouped(int index)
+    {
+        if (index <= 0) return false;
+        var current = _messages[index];
+        var prev = _messages[index - 1];
+        return current.SenderMemberId == prev.SenderMemberId &&
+               GetGapMinutes(prev.CreatedAt, current.CreatedAt) <= TimeGroupGapMinutes;
+    }
+
+    private static int GetGapMinutes(DateTime earlier, DateTime later)
+        => (int)Math.Abs((later - earlier).TotalMinutes);
+
+    private static string FormatTimestamp(DateTime value)
+    {
+        var local = value.ToLocalTime();
+        var today = DateTime.Now.Date;
+        if (local.Date == today)
+            return $"Сегодня, {local:HH:mm}";
+        return local.ToString("dd.MM, HH:mm");
+    }
+
+    private static string FormatShortTime(DateTime? value)
+    {
+        if (!value.HasValue)
+            return "";
+
+        var local = value.Value.ToLocalTime();
+        return local.Date == DateTime.Now.Date ? local.ToString("HH:mm") : local.ToString("dd.MM");
+    }
+
+    private static string GetInitials(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "?";
+
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1)
+            return parts[0][0].ToString().ToUpperInvariant();
+
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private void UpdateMentionSuggestions()
+    {
+        var query = ExtractMentionQuery(_messageText);
+        if (query is null)
+        {
+            _mentionQuery = null;
+            _visibleMentionSuggestions.Clear();
+            return;
+        }
+
+        _mentionQuery = query;
+        _visibleMentionSuggestions.Clear();
+        if (string.IsNullOrWhiteSpace(query.Value.Query) || "all".StartsWith(query.Value.Query, StringComparison.OrdinalIgnoreCase))
+            _visibleMentionSuggestions.Add(new MentionSuggestion("all", "@all", "Вся команда"));
+
+        foreach (var item in _mentionSuggestions
+            .Where(item => string.IsNullOrWhiteSpace(query.Value.Query) || item.Username.StartsWith(query.Value.Query, StringComparison.OrdinalIgnoreCase))
+            .Take(6 - _visibleMentionSuggestions.Count))
+        {
+            _visibleMentionSuggestions.Add(item);
+        }
+    }
+
+    private void ApplyMentionSuggestion(MentionSuggestion suggestion)
+    {
+        if (_mentionQuery is not { } query)
+            return;
+
+        var insert = $"@{suggestion.Username} ";
+        _messageText = string.Concat(
+            _messageText.AsSpan(0, query.Start),
+            insert,
+            _messageText.AsSpan(query.End));
+        _visibleMentionSuggestions.Clear();
+        _mentionQuery = null;
+        _ = JS.InvokeVoidAsync("steptreckChat.setComposerValue", _composerEl, _messageText);
+    }
+
+    private IEnumerable<MessageTextPart> GetMessageTextParts(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            yield break;
+
+        var index = 0;
+        while (index < text.Length)
+        {
+            var start = text.IndexOf('@', index);
+            if (start < 0)
+            {
+                yield return new MessageTextPart(text[index..], null);
+                yield break;
+            }
+
+            if (start > index)
+                yield return new MessageTextPart(text[index..start], null);
+
+            var end = start + 1;
+            while (end < text.Length && IsMentionChar(text[end]))
+                end++;
+
+            if (end == start + 1)
+            {
+                yield return new MessageTextPart("@", null);
+                index = end;
+                continue;
+            }
+
+            var username = text[(start + 1)..end];
+            if (_mentionMemberIds.TryGetValue(username, out var memberId))
+                yield return new MessageTextPart(text[start..end], memberId);
+            else
+                yield return new MessageTextPart(text[start..end], null);
+
+            index = end;
+        }
+    }
+
+    private static bool IsMentionChar(char value)
+        => char.IsLetterOrDigit(value) || value is '_' or '-' or '.';
+
+    private void OpenMemberProfile(int memberId)
+        => Nav.NavigateTo($"/workplace/members/{memberId}");
+
+    private static MentionQuery? ExtractMentionQuery(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return null;
+
+        var caret = text.Length;
+        var start = text.LastIndexOf('@', Math.Max(0, caret - 1));
+        if (start < 0)
+            return null;
+
+        if (start > 0 && !char.IsWhiteSpace(text[start - 1]))
+            return null;
+
+        var value = text[(start + 1)..caret];
+        if (value.Any(char.IsWhiteSpace) || value.Length > 32)
+            return null;
+
+        return new MentionQuery(start, caret, value);
+    }
+
+    private static string TrimPreview(string? text)
+    {
+        var value = string.IsNullOrWhiteSpace(text) ? "Нет сообщений" : text.Trim().ReplaceLineEndings(" ");
+        return value.Length <= 90 ? value : $"{value[..90]}...";
+    }
+
+    private static string FormatDayLabel(DateTime localDay)
+    {
+        var today = DateTime.Now.Date;
+        if (localDay == today)
+            return "Сегодня";
+        if (localDay == today.AddDays(-1))
+            return "Вчера";
+
+        var label = $"{MonthName(localDay.Month)} {localDay.Day}";
+        if (localDay.Year != today.Year)
+            label += $" {localDay.Year}";
+
+        return label;
+    }
+
+    private static string MonthName(int month) => month switch
+    {
+        1 => "Январь",
+        2 => "Февраль",
+        3 => "Март",
+        4 => "Апрель",
+        5 => "Май",
+        6 => "Июнь",
+        7 => "Июль",
+        8 => "Август",
+        9 => "Сентябрь",
+        10 => "Октябрь",
+        11 => "Ноябрь",
+        12 => "Декабрь",
+        _ => ""
+    };
+
+    private void OpenTeam()
+    {
+        if (_selectedChat is null)
+            return;
+        Nav.NavigateTo($"/workplace/projects/{_selectedChat.ProjectId}/teams/{_selectedChat.TeamId}");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        _composerHandle ??= DotNetObjectReference.Create(this);
+
+        if (!_loadingMessages && _selectedChat is not null && !_composerInteropBound)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("steptreckChat.autosize", _composerEl);
+                await JS.InvokeVoidAsync("steptreckChat.bindComposer", _composerEl, _composerHandle);
+                await JS.InvokeVoidAsync("steptreckChat.bindEmojiPicker", _emojiButtonEl, _emojiPanelEl, _composerEl);
+                await JS.InvokeVoidAsync("steptreckChat.bindMessageCopy", _streamRef);
+                _composerInteropBound = true;
+            }
+            catch
+            {
+            }
+        }
+
+        if (_pendingScrollToBottom)
+        {
+            _pendingScrollToBottom = false;
+            await ScrollToBottomAsync();
+        }
+    }
+
+    private void RequestScrollToBottom()
+        => _pendingScrollToBottom = true;
+
+    private async Task ScrollToBottomAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("steptreckChat.scrollToBottom", _streamRef);
+        }
+        catch
+        {
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _subscription?.Dispose();
+        _reactionSubscription?.Dispose();
+        _pinSubscription?.Dispose();
+        _composerHandle?.Dispose();
+
+        if (_connected)
+            await ChatClient.DisposeAsync();
+    }
+
+    private readonly record struct MentionQuery(int Start, int End, string Query);
+
+    private readonly record struct MentionSuggestion(string Username, string Label, string Subtitle);
+
+    private readonly record struct MessageTextPart(string Text, int? MemberId);
+}

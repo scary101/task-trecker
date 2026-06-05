@@ -1,0 +1,152 @@
+﻿@page "/"
+@using steptreck.Domain.DTOs.PlanDTOs
+@inject steptreck.Web.ViewModel.PlanVM PlansVm
+
+<PageTitle>StepTreck — управление командой и процессами</PageTitle>
+
+<main class="home">
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-badge">StepTreck • платформа для команд</div>
+            <h1>Управляй командой и процессами без хаоса</h1>
+            <p>
+                Простая система для задач, ролей и ответственности.
+                Всё в одном месте, с понятными правилами и прозрачной картиной.
+            </p>
+            <div class="hero-actions">
+                <a class="btn primary" href="#plans">Смотреть тарифы</a>
+                <a class="btn ghost" href="#about">О сервисе</a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-value">+27%</div>
+                    <div class="stat-label">скорость процессов</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">-40%</div>
+                    <div class="stat-label">потерь задач</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">1 день</div>
+                    <div class="stat-label">до запуска</div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-panel card">
+            <div class="panel-title">Панель команды</div>
+            <div class="panel-grid">
+                <div class="panel-item">
+                    <div class="panel-label">Активные задачи</div>
+                    <div class="panel-value">24</div>
+                </div>
+                <div class="panel-item">
+                    <div class="panel-label">Отделы</div>
+                    <div class="panel-value">5</div>
+                </div>
+                <div class="panel-item">
+                    <div class="panel-label">Риски</div>
+                    <div class="panel-value">2</div>
+                </div>
+            </div>
+            <div class="panel-list">
+                <div class="panel-row">
+                    <span class="panel-dot primary"></span>
+                    <div>
+                        <div class="panel-task">Онбординг нового сотрудника</div>
+                        <div class="panel-sub">назначено • чеклист • дедлайн</div>
+                    </div>
+                    <span class="panel-tag">Сегодня</span>
+                </div>
+                <div class="panel-row">
+                    <span class="panel-dot"></span>
+                    <div>
+                        <div class="panel-task">Отчёт по отделу продаж</div>
+                        <div class="panel-sub">план/факт • KPI • комментарии</div>
+                    </div>
+                    <span class="panel-tag">Завтра</span>
+                </div>
+                <div class="panel-row">
+                    <span class="panel-dot"></span>
+                    <div>
+                        <div class="panel-task">Проверка ролей и доступов</div>
+                        <div class="panel-sub">безопасность • аудит</div>
+                    </div>
+                    <span class="panel-tag">Неделя</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="section">
+        <h2 class="section-title">Почему это работает</h2>
+        <p class="section-subtitle">
+            StepTreck помогает командам выстроить структуру, роли и дисциплину исполнения.
+            Без лишней сложности и разрозненных таблиц.
+        </p>
+        <div class="feature-grid">
+            <div class="feature card">
+                <div class="feature-title">Быстрый старт</div>
+                <div class="feature-text">Создай организацию и раздай роли за несколько минут.</div>
+            </div>
+            <div class="feature card">
+                <div class="feature-title">Прозрачность</div>
+                <div class="feature-text">Каждый видит свои задачи и статус командных проектов.</div>
+            </div>
+            <div class="feature card">
+                <div class="feature-title">Контроль</div>
+                <div class="feature-text">Все процессы измеримы и управляемы в одном месте.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="plans" class="section">
+        <h2 class="section-title">Тарифы</h2>
+        <p class="section-subtitle">
+            Выбирай план под размер команды. Все тарифы — платные и честные.
+        </p>
+
+        @if (_plans is null)
+        {
+            <div class="plans-empty card">Загружаем тарифы...</div>
+        }
+        else if (_plans.Count == 0)
+        {
+            <div class="plans-empty card">Пока нет тарифов. Добавь планы в БД.</div>
+        }
+        else
+        {
+            <div class="plans-grid">
+                @for (var i = 0; i < _plans.Count; i++)
+                {
+                    <PlanCard Plan="_plans[i]" Index="i" />
+                }
+            </div>
+        }
+    </section>
+
+    <section class="cta card">
+        <div>
+            <h2>Готов навести порядок в команде?</h2>
+            <p>Запускай StepTreck и начни управлять процессами системно.</p>
+        </div>
+        <div class="cta-actions">
+            <a class="btn primary" href="#plans">Выбрать тариф</a>
+            <a class="btn ghost" href="/register">Создать организацию</a>
+            <a class="btn ghost" href="/subscription/config">Конфиг подписки</a>
+        </div>
+    </section>
+
+</main>
+
+@code {
+    private List<PlanPublicDto>? _plans;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _plans = (await PlansVm.GetAllAsync())
+            .OrderBy(p => p.BasePriceCents)
+            .ThenBy(p => p.Id)
+            .ToList();
+    }
+}
+

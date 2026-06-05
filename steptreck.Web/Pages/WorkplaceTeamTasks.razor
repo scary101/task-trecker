@@ -1,0 +1,670 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/tasks"
+@using steptreck.Domain.DTOs.TaskDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@using steptreck.Domain.DTOs.TeamDTOs.MemberDTOs
+@using steptreck.Domain.Enums
+@inject steptreck.Web.ViewModel.TaskViewModel TasksVm
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-tasks-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="tasks"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        <div class="details-layout no-sidebar">
+            <div class="tasks-shell">
+                <div class="section-head">
+                    <div>
+                        <h1>@SectionTitle</h1>
+                        <p class="section-subtitle">@SectionSubtitle</p>
+                    </div>
+                    <div class="page-actions">
+                        <a class="btn ghost active-view" href="@TasksUrl">Активные задачи</a>
+                        <a class="btn ghost" href="@HistoryUrl">История задач</a>
+                        @if (ShouldShowCreateButton)
+                        {
+                            <button class="btn primary" type="button" @onclick="OpenCreateModal">Создать задачу</button>
+                        }
+                    </div>
+                </div>
+
+                @if (_isOwner)
+                {
+                    <div class="tasks-tabs">
+                        <button class="tab-btn @GetTabClass("active")"
+                                type="button"
+                                @onclick="@(() => SetTab("active"))">
+                            Активные задачи
+                        </button>
+
+                        <button class="tab-btn @GetTabClass("team")"
+                                type="button"
+                                @onclick="@(() => SetTab("team"))">
+                            Задачи команды
+                        </button>
+                    </div>
+
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_alert))
+                {
+                    <div class="alert @(_alertKind)">@_alert</div>
+                }
+
+                @if (_isOwner && _activeTab == "team" && string.IsNullOrWhiteSpace(_teamLeadName))
+                {
+                    <div class="alert err">У команды нет тимлида. Назначьте руководителя, чтобы выдавать задачи.</div>
+                }
+
+                @if (!_loading)
+                {
+                    <TaskFiltersToolbar ItemsCount="@GetVisibleTasks().Count"
+                                        @bind-SearchTerm="_taskSearch"
+                                        @bind-PriorityFilter="_priorityFilter"
+                                        @bind-DateSort="_dateSort"
+                                        @bind-Collapsed="_filtersCollapsed" />
+                }
+
+                @if (_loading)
+                {
+                    <div class="tasks-empty card">Загружаем задачи...</div>
+                }
+                else
+                {
+                    var visibleTasks = GetVisibleTasks();
+                    if (visibleTasks.Count == 0)
+                    {
+                        <div class="tasks-empty card">@GetEmptyMessage()</div>
+                    }
+                    else
+                    {
+                        <section class="tasks-list">
+                            @foreach (var t in visibleTasks)
+                            {
+                                <article class="task-card card" role="button" tabindex="0" @onclick="() => OpenTask(t.Id)">
+                                    <div class="task-main">
+                                        <div class="task-title">@t.Title</div>
+                                        <div class="task-meta">
+                                            <span class="task-pill status @GetStatusClass(t.Status)">@GetStatusLabel(t.Status)</span>
+                                            <span class="task-pill priority @GetPriorityClass(t.Priority)">@GetPriorityLabel(t.Priority)</span>
+                                            @if (t.Deadline.HasValue)
+                                            {
+                                                <span class="task-pill deadline">@FormatDate(t.Deadline)</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="task-side">
+                                        <div class="task-assignee">@(!string.IsNullOrWhiteSpace(t.AssignedTo) ? t.AssignedTo : "Не назначено")</div>
+                                        <div class="task-id">#@t.Id</div>
+                                    </div>
+                                </article>
+                            }
+                        </section>
+                    }
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showCreateModal && !_isEmployee)
+{
+    <div class="modal-backdrop" @onclick="CloseCreateModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-check2-square" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Новая задача</h2>
+                        <p>Заполните базовые параметры и назначьте участника.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseCreateModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_modalAlert))
+            {
+                <div class="alert @(_modalAlertKind)">@_modalAlert</div>
+            }
+
+            <EditForm Model="_createModel" OnValidSubmit="CreateTaskAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputText class="input" @bind-Value="_createModel.Title" placeholder="Например, подготовить презентацию" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputTextArea class="input" @bind-Value="_createModel.Description" rows="4" />
+                    </div>
+                    <div class="field deadline-date-field">
+                        <label class="label">Срок</label>
+                        <InputDate class="input" @bind-Value="_createModel.Deadline" @attributes="GetDeadlineAttributes()" />
+                    </div>
+                    <div class="field deadline-time-field">
+                        <label class="label">Время</label>
+                        <input class="input" type="time" value="@_deadlineTime" @onchange="OnDeadlineTimeChanged" />
+                    </div>
+                    <div class="field">
+                        <label class="label">Приоритет</label>
+                        <InputSelect class="input" @bind-Value="_selectedPriorityId">
+                            <option value="@((int)TaskPriority.Medium)">Обычный</option>
+                            <option value="@((int)TaskPriority.Low)">Низкий</option>
+                            <option value="@((int)TaskPriority.High)">Высокий</option>
+                            <option value="@((int)TaskPriority.Critical)">Критический</option>
+                        </InputSelect>
+                    </div>
+                    @if (!_isOwner)
+                    {
+                        <div class="field span-2">
+                            <label class="label">Ответственный</label>
+                            <InputSelect class="input" @bind-Value="_createModel.AssignedToMemberId">
+                                <option value="">Не назначать</option>
+                                @foreach (var member in _members)
+                                {
+                                    <option value="@member.MemberId">@member.FullName</option>
+                                }
+                            </InputSelect>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="field span-2">
+                            <label class="label">Ответственный</label>
+                            <div class="readonly-value">
+                                @(_teamLeadName ?? "Не назначен")
+                            </div>
+                        </div>
+                    }
+                    <div class="field span-2">
+                        <label class="label">Чек-лист</label>
+                        <div class="checklist">
+                            @if (_checklist.Count == 0)
+                            {
+                                <div class="checklist-empty">Пока нет пунктов.</div>
+                            }
+                            else
+                            {
+                                @foreach (var item in _checklist)
+                                {
+                                    <div class="checklist-row" @key="item">
+                                        <InputText class="input"
+                                                   @bind-Value="item.Title"
+                                                   placeholder="Пункт чек-листа" />
+                                        <button class="btn ghost" type="button" @onclick="() => RemoveChecklistItem(item)">
+                                            Удалить
+                                        </button>
+                                    </div>
+                                }
+                            }
+
+                            <button class="btn ghost" type="button" @onclick="AddChecklistItem">Добавить пункт</button>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Создать</button>
+                    <button class="btn ghost" type="button" @onclick="CloseCreateModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private List<TaskListItemDto> _tasks = new();
+    private List<TeamMemberDto> _members = new();
+    private bool _loading = true;
+    private bool _roleReady;
+    private bool _busy;
+    private bool _showCreateModal;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private string? _modalAlert;
+    private string _modalAlertKind = "ok";
+    private CreateTaskForTeamDto _createModel = new();
+    private readonly List<CreateTaskChecklistItemDto> _checklist = new();
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private bool _isOwner;
+    private int? _teamLeadMemberId;
+    private string? _teamLeadName;
+    private int _selectedPriorityId = (int)TaskPriority.Medium;
+    private string _deadlineTime = string.Empty;
+    private string _activeTab = "active";
+    private string _taskSearch = string.Empty;
+    private string _priorityFilter = "all";
+    private string _dateSort = "none";
+    private bool _filtersCollapsed;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int OwnerRoleId = 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _isOwner = roleId == OwnerRoleId;
+
+        if (_isOwner)
+        {
+            Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}", forceLoad: true);
+            return;
+        }
+
+        if (_isEmployee)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/tasks", forceLoad: true);
+                return;
+            }
+        }
+
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _tasks = await TasksVm.GetTeamTasksAsync<TaskListItemDto>(TeamId);
+        _members = await TeamsVm.GetTeamMembersAsync(TeamId);
+        var teamInfo = await TeamsVm.GetTeamAsync(TeamId);
+        _teamLeadMemberId = teamInfo?.LeadMemberId;
+        _teamLeadName = teamInfo?.LeadFullName;
+        _loading = false;
+    }
+
+    private void OpenCreateModal()
+    {
+        if (_isEmployee)
+            return;
+        if (_isOwner && _activeTab != "team")
+            return;
+        if (_isOwner && !_teamLeadMemberId.HasValue)
+        {
+            _alertKind = "err";
+            _alert = "Нельзя выдать задачу без тимлида.";
+            return;
+        }
+
+        _createModel = new CreateTaskForTeamDto
+        {
+            ProjectId = ProjectId,
+            TeamId = TeamId,
+            Priority = TaskPriority.Medium,
+            AssignedToMemberId = _isOwner ? _teamLeadMemberId : null
+        };
+        _selectedPriorityId = (int)TaskPriority.Medium;
+        _deadlineTime = string.Empty;
+        _checklist.Clear();
+        _modalAlert = null;
+        _modalAlertKind = "ok";
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+    }
+
+    private async Task CreateTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_createModel.Title))
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Введите название задачи.";
+            return;
+        }
+
+        if (!TryBuildDeadline(out var deadline, out var deadlineError))
+        {
+            _modalAlertKind = "err";
+            _modalAlert = deadlineError;
+            return;
+        }
+
+        if (deadline.HasValue && string.IsNullOrWhiteSpace(_deadlineTime) && deadline.Value.Date < DateTime.Today)
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Нельзя поставить срок раньше сегодняшней даты.";
+            return;
+        }
+
+        if (deadline.HasValue && !string.IsNullOrWhiteSpace(_deadlineTime) && deadline.Value < DateTime.Now)
+        {
+            _modalAlertKind = "err";
+            _modalAlert = "Нельзя поставить срок раньше текущего времени.";
+            return;
+        }
+
+        _busy = true;
+        _modalAlert = null;
+        try
+        {
+            if (!Enum.IsDefined(typeof(TaskPriority), _selectedPriorityId))
+            {
+                _modalAlertKind = "err";
+                _modalAlert = "Выберите корректный приоритет.";
+                return;
+            }
+
+            _createModel.Priority = (TaskPriority)_selectedPriorityId;
+            _createModel.Deadline = deadline;
+
+            if (_createModel.AssignedToMemberId == 0)
+                _createModel.AssignedToMemberId = null;
+
+            _createModel.Checklist = _checklist
+                .Select(i => new CreateTaskChecklistItemDto { Title = i.Title?.Trim() })
+                .Where(i => !string.IsNullOrWhiteSpace(i.Title))
+                .ToList();
+
+            if (_isOwner)
+                _createModel.AssignedToMemberId = _teamLeadMemberId;
+
+            var (result, id) = await TasksVm.CreateAsync(_createModel);
+            if (result.Success && id.HasValue)
+            {
+                _alertKind = "ok";
+                _alert = "Задача создана.";
+                _showCreateModal = false;
+                _roleReady = true;
+
+                await LoadAsync();
+            }
+            else
+            {
+                _modalAlertKind = "err";
+                _modalAlert = result.Error ?? "Не удалось создать задачу.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void AddChecklistItem()
+    {
+        _checklist.Add(new CreateTaskChecklistItemDto { Title = string.Empty });
+    }
+    private void RemoveChecklistItem(CreateTaskChecklistItemDto item)
+    {
+        _checklist.Remove(item);
+    }
+
+    private void OnDeadlineTimeChanged(ChangeEventArgs args)
+    {
+        _deadlineTime = args.Value?.ToString() ?? string.Empty;
+    }
+
+    private bool TryBuildDeadline(out DateTime? deadline, out string? error)
+    {
+        deadline = null;
+        error = null;
+
+        if (!_createModel.Deadline.HasValue)
+        {
+            if (!string.IsNullOrWhiteSpace(_deadlineTime))
+            {
+                error = "Сначала выберите дату срока.";
+                return false;
+            }
+
+            return true;
+        }
+
+        var date = _createModel.Deadline.Value.Date;
+        if (string.IsNullOrWhiteSpace(_deadlineTime))
+        {
+            deadline = date;
+            return true;
+        }
+
+        if (!TimeSpan.TryParse(_deadlineTime, out var time))
+        {
+            error = "Выберите корректное время срока.";
+            return false;
+        }
+
+        deadline = date.Add(time);
+        return true;
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+
+    private void OpenTask(int taskId)
+        => Nav.NavigateTo($"/workplace/tasks/{taskId}");
+
+    private string TasksUrl => $"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks";
+    private string HistoryUrl => $"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks/history";
+
+    private static string FormatDate(DateTime? value)
+    {
+        if (!value.HasValue)
+            return "?";
+
+        return value.Value.TimeOfDay == TimeSpan.Zero
+            ? value.Value.ToString("dd.MM.yyyy")
+            : value.Value.ToString("dd.MM.yyyy HH:mm");
+    }
+
+    private IReadOnlyDictionary<string, object> GetDeadlineAttributes()
+    {
+        return new Dictionary<string, object>
+        {
+            ["min"] = DateTime.Today.ToString("yyyy-MM-dd")
+        };
+    }
+
+    private static string GetStatusClass(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "todo",
+            "inprogress" => "inprogress",
+            "done" => "done",
+            "canceled" => "canceled",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetStatusLabel(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "К выполнению",
+            "inprogress" => "В работе",
+            "done" => "Готово",
+            "canceled" => "Отменено",
+            _ => string.IsNullOrWhiteSpace(status) ? "?" : status
+        };
+    }
+
+    private static string GetPriorityClass(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "low",
+            "обычный" or "normal" => "normal",
+            "высокий" or "high" => "high",
+            "критический" or "critical" => "critical",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetPriorityLabel(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "Низкий",
+            "обычный" or "normal" => "Обычный",
+            "высокий" or "high" => "Высокий",
+            "критический" or "critical" => "Критический",
+            _ => string.IsNullOrWhiteSpace(priority) ? "—" : priority
+        };
+    }
+
+    private string SectionTitle =>
+        _isOwner && _activeTab == "team"
+            ? "Задачи команды"
+            : "Активные задачи";
+
+    private string SectionSubtitle =>
+        _isOwner && _activeTab == "team"
+            ? "Задачи будут назначаться тимлиду команды."
+            : "Список задач команды и быстрый доступ к созданию.";
+
+    private bool ShouldShowCreateButton =>
+        (!_isOwner && !_isEmployee) || (_isOwner && _activeTab == "team");
+
+    private void SetTab(string tab)
+    {
+        if (_activeTab == tab)
+            return;
+        _activeTab = tab;
+    }
+
+    private string GetTabClass(string tab)
+        => _activeTab == tab ? "active" : "";
+
+    private IReadOnlyList<TaskListItemDto> GetVisibleTasks()
+    {
+        IEnumerable<TaskListItemDto> visibleTasks = _tasks.Where(IsActiveTask);
+
+        if (_isOwner && _activeTab == "team")
+        {
+            if (string.IsNullOrWhiteSpace(_teamLeadName))
+                return new List<TaskListItemDto>();
+
+            return ApplyTaskFilters(visibleTasks
+                .Where(t => string.Equals(t.AssignedTo, _teamLeadName, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        return ApplyTaskFilters(visibleTasks);
+    }
+
+    private IReadOnlyList<TaskListItemDto> ApplyTaskFilters(IEnumerable<TaskListItemDto> tasks)
+    {
+        var query = _taskSearch.Trim();
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            tasks = tasks.Where(t => (t.Title ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.Equals(_priorityFilter, "all", StringComparison.OrdinalIgnoreCase))
+        {
+            tasks = tasks.Where(t => string.Equals(NormalizePriority(t.Priority), _priorityFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        tasks = _dateSort switch
+        {
+            "deadline_asc" => tasks.OrderBy(t => t.Deadline.HasValue ? 0 : 1).ThenBy(t => t.Deadline),
+            "deadline_desc" => tasks.OrderBy(t => t.Deadline.HasValue ? 0 : 1).ThenByDescending(t => t.Deadline),
+            "no_deadline_first" => tasks.OrderByDescending(t => !t.Deadline.HasValue).ThenBy(t => t.Deadline),
+            _ => tasks
+        };
+
+        return tasks.ToList();
+    }
+
+    private bool HasTaskFilters =>
+        !string.IsNullOrWhiteSpace(_taskSearch) ||
+        !string.Equals(_priorityFilter, "all", StringComparison.OrdinalIgnoreCase);
+
+    private static string NormalizePriority(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "low",
+            "обычный" or "normal" or "medium" => "normal",
+            "высокий" or "high" => "high",
+            "критический" or "critical" => "critical",
+            _ => "other"
+        };
+    }
+
+    private string GetEmptyMessage()
+    {
+        if (HasTaskFilters)
+            return "По выбранным фильтрам задачи не найдены.";
+
+        if (_isOwner && _activeTab == "team")
+            return "Пока нет активных задач, выданных команде.";
+
+        return "В команде пока нет активных задач.";
+    }
+
+    private static bool IsActiveTask(TaskListItemDto task)
+    {
+        var status = (task.Status ?? string.Empty).Trim().ToLowerInvariant();
+        return status is "todo" or "inprogress";
+    }
+}
+
+

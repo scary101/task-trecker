@@ -1,0 +1,471 @@
+﻿@page "/profile"
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.WorkSessionDTOs
+@using steptreck.Domain.Enums
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.AuthViewModel AuthVm
+@inject steptreck.Web.ViewModel.MemberScoreViewModel ScoreVm
+@inject steptreck.Web.ViewModel.WorkSessionViewModel WorkSessionVm
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject NavigationManager Nav
+@inject IConfiguration Config
+@inject IJSRuntime JS
+
+<PageTitle>Профиль — StepTreck</PageTitle>
+
+<main class="page profile-page">
+    <section class="profile-header card">
+        <div class="profile-header-main">
+            <div class="avatar">
+                @if (!string.IsNullOrWhiteSpace(_avatarUrl))
+                {
+                    <img src="@_avatarUrl" alt="Avatar" />
+                }
+                else
+                {
+                    <span>@_initials</span>
+                }
+            </div>
+            <div>
+                <h1>@_fullName</h1>
+                <div class="profile-tags">
+                    @if (!string.IsNullOrWhiteSpace(_profile?.Username))
+                    {
+                        <span class="tag">@($"@{_profile.Username}")</span>
+                    }
+                    <span class="tag">@GetRoleLabel(_profile?.RoleName)</span>
+                    <span class="tag @(GetStatusClass())">@GetStatusLabel()</span>
+                </div>
+            </div>
+        </div>
+        <div class="profile-header-meta">
+            <div>
+                <span>Организация</span>
+                <strong>@(_profile?.OrganizationName.ToString() ?? "—")</strong>
+            </div>
+            <div>
+                <span>Команда</span>
+                <strong>@(_profile?.Team?.TeamName ?? "Без команды")</strong>
+            </div>
+            <div>
+                <span>Обновлено</span>
+                <strong>@FormatDate(_profile?.UpdatedAt)</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="profile-layout">
+        <div class="profile-left">
+            <section class="panel card">
+                <h2>Личная информация</h2>
+                <div class="panel-grid">
+                    <div>
+                        <span>Никнейм</span>
+                        <strong>@DisplayUsername</strong>
+                    </div>
+                    <div>
+                        <span>Дата входа</span>
+                        <strong>@FormatDate(_profile?.CreatedAt)</strong>
+                    </div>
+                    <div>
+                        <span>Статус</span>
+                        <strong>@GetStatusLabel()</strong>
+                    </div>
+                    <div>
+                        <span>Роль</span>
+                        <strong>@GetRoleLabel(_profile?.RoleName)</strong>
+                    </div>
+                </div>
+                <div class="profile-session-state">
+                    <span>Рабочая сессия</span>
+                    <strong>@GetLastSessionStatusText()</strong>
+                </div>
+            </section>
+
+            <section class="panel card">
+                <h2>Команда</h2>
+                @if (_profile?.Team is null)
+                {
+                    <p class="side-muted">Ты пока не закреплён за командой.</p>
+                }
+                else
+                {
+                    <div class="side-block">
+                        <div class="side-title">@_profile.Team.TeamName</div>
+                        @if (!string.IsNullOrWhiteSpace(_profile.Team.TeamDescription))
+                        {
+                            <p>@_profile.Team.TeamDescription</p>
+                        }
+                        <div class="side-row">
+                            <span>Роль в команде</span>
+                            <strong>@(_profile.Team.TeamRole ?? "—")</strong>
+                        </div>
+                        <div class="side-row">
+                            <span>Проект</span>
+                            <strong>#@_profile.Team.ProjectId</strong>
+                        </div>
+                        <div class="side-row">
+                            <span>Вступил</span>
+                            <strong>@FormatDate(_profile.Team.JoinedAt)</strong>
+                        </div>
+                    </div>
+                }
+            </section>
+
+            <section class="panel card">
+                <h2>Действия</h2>
+                <div class="nickname-form">
+                    <div class="field">
+                        <label class="label" for="profile-username">Никнейм</label>
+                        <InputText id="profile-username"
+                                   class="input"
+                                   maxlength="32"
+                                   @bind-Value="_username" />
+                    </div>
+                    <button class="btn primary" type="button" @onclick="SaveUsernameAsync" disabled="@_usernameBusy">
+                        @(_usernameBusy ? "Сохраняем..." : "Сохранить никнейм")
+                    </button>
+                </div>
+
+                <div class="upload-card">
+                    <InputFile id="avatar-input"
+                               OnChange="OnAvatarSelected"
+                               accept="image/*"
+                               class="visually-hidden" />
+
+                    <label id="avatar-dropzone"
+                           class="avatar-dropzone @(_avatarUploading ? "busy" : "")"
+                           for="avatar-input">
+                        <span class="avatar-preview">
+                            @if (!string.IsNullOrWhiteSpace(_avatarUrl))
+                            {
+                                <img src="@_avatarUrl" alt="Avatar" />
+                            }
+                            else
+                            {
+                                <span>@_initials</span>
+                            }
+                        </span>
+                        <span class="dropzone-copy">
+                            <span class="dropzone-title">
+                                <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i>
+                                Фото профиля
+                            </span>
+                            <span class="dropzone-text">Перетащите изображение сюда или выберите файл вручную.</span>
+                            <span class="dropzone-meta">JPG, PNG или WEBP до 5 МБ</span>
+                        </span>
+                        <span class="dropzone-action">
+                            @if (_avatarUploading)
+                            {
+                                <span class="upload-spinner" aria-hidden="true"></span>
+                                <span>Загрузка</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                                <span>Выбрать</span>
+                            }
+                        </span>
+                    </label>
+
+                    <div class="upload-foot">
+                        <span class="upload-hint">
+                            @if (!string.IsNullOrWhiteSpace(_selectedAvatarName))
+                            {
+                                @_selectedAvatarName
+                            }
+                            else
+                            {
+                                <text>Файл пока не выбран</text>
+                            }
+                        </span>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_status))
+                {
+                    <div class="alert @_statusKind">
+                        @_status
+                    </div>
+                }
+
+                <div class="action-row">
+                    <button class="btn ghost" type="button" @onclick="LogoutAsync">Выйти</button>
+                </div>
+            </section>
+        </div>
+
+        <aside class="profile-right">
+            @if (_score is null)
+            {
+                <div class="profile-score-empty">Статистика пока не рассчитана.</div>
+            }
+            else
+            {
+                <ScoreCard Title="Trust Factor"
+                           Name="Надёжность"
+                           Subtitle="Изменение за последние 7 дней"
+                           Trust="@_score.Trust"
+                           MissRate="@_score.MissRate"
+                           CompletedCount="@_score.CompletedCount"
+                           MissedCount="@_score.MissedCount"
+                           TrustLevel="@_score.TrustLevel"
+                           Logs="@_score.LogScore"
+                           PriorityStats="@_score.PriorityStats"
+                           ShowChart="true" />
+            }
+        </aside>
+    </section>
+</main>
+
+@code {
+    private MemberProfileDto? _profile;
+    private ScoreDto? _score;
+    private UserCurrentSessionDto? _lastSession;
+    private string _fullName = "Пользователь";
+    private string _initials = "ST";
+    private string? _avatarUrl;
+    private string _username = "";
+    private bool _usernameBusy;
+
+    private string? _status;
+    private string _statusKind = "ok";
+    private string? _selectedAvatarName;
+    private bool _avatarUploading;
+
+    private string ApiBase =>
+        (Config["Api:BaseUrl"] ?? "").Trim().TrimEnd('/');
+
+    private string DisplayUsername =>
+        string.IsNullOrWhiteSpace(_profile?.Username) ? "—" : $"@{_profile.Username}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JwtService.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return;
+        }
+
+        try
+        {
+            _profile = await MembersVm.GetMyProfileAsync();
+            _score = await ScoreVm.GetMyScore();
+
+            if (_profile is not null)
+            {
+                _fullName = string.IsNullOrWhiteSpace(_profile.FullName) ? _fullName : _profile.FullName;
+                _initials = BuildInitials(_fullName);
+                _username = _profile.Username ?? "";
+
+                _avatarUrl = BuildAvatarUrl(_profile.AvatarUrl);
+
+                if (_profile.UserId.HasValue)
+                    _lastSession = await WorkSessionVm.GetUserCurrentOrLastSessionAsync(_profile.UserId.Value);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("steptreckTheme.init");
+                await JS.InvokeVoidAsync("steptreckProfileAvatar.init", "avatar-dropzone", "avatar-input");
+            }
+            catch
+            {
+            }
+        }
+    }
+
+    private async Task OnAvatarSelected(InputFileChangeEventArgs e)
+    {
+        _status = null;
+        _selectedAvatarName = null;
+
+        try
+        {
+            var file = e.File;
+            if (file is null) return;
+
+            _selectedAvatarName = file.Name;
+
+            if (!IsImageFile(file))
+            {
+                _statusKind = "err";
+                _status = "Выберите изображение.";
+                return;
+            }
+
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                _statusKind = "err";
+                _status = "Файл больше 5 МБ.";
+                return;
+            }
+
+            _avatarUploading = true;
+            StateHasChanged();
+
+            await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            var url = await MembersVm.UploadAvatarAsync(stream, file.Name);
+
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                _statusKind = "err";
+                _status = "Не удалось загрузить аватар.";
+                return;
+            }
+
+            _avatarUrl = BuildAvatarUrl(url);
+
+            _statusKind = "ok";
+            _status = "Аватар обновлен.";
+        }
+        catch
+        {
+            _statusKind = "err";
+            _status = "Ошибка загрузки.";
+        }
+        finally
+        {
+            _avatarUploading = false;
+        }
+    }
+
+    private async Task SaveUsernameAsync()
+    {
+        _status = null;
+        var username = (_username ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            _statusKind = "err";
+            _status = "Введите никнейм.";
+            return;
+        }
+        if (!IsUsernameValid(username))
+        {
+            _statusKind = "err";
+            _status = "Никнейм: 3-32 символа, латинские буквы, цифры и _.";
+            return;
+        }
+
+        _usernameBusy = true;
+        try
+        {
+            var result = await MembersVm.UpdateUsernameAsync(username);
+            if (!result.Success)
+            {
+                _statusKind = "err";
+                _status = result.Error ?? "Не удалось обновить никнейм.";
+                return;
+            }
+
+            _username = result.Message ?? username.ToLowerInvariant();
+            if (_profile is not null)
+            {
+                _profile.Username = _username;
+                _profile.UpdatedAt = DateTime.UtcNow;
+            }
+
+            _statusKind = "ok";
+            _status = "Никнейм обновлен.";
+        }
+        finally
+        {
+            _usernameBusy = false;
+        }
+    }
+
+    private static bool IsUsernameValid(string username)
+        => username.Length is >= 3 and <= 32 &&
+           username.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_');
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+
+    private string? BuildAvatarUrl(string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw; 
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0) return "ST";
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static bool IsImageFile(IBrowserFile file)
+    {
+        if (file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var ext = Path.GetExtension(file.Name);
+        return ext.Equals(".jpg", StringComparison.OrdinalIgnoreCase) ||
+               ext.Equals(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+               ext.Equals(".png", StringComparison.OrdinalIgnoreCase) ||
+               ext.Equals(".webp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetStatusLabel() => GetStatusLabel(_profile?.IsActive);
+
+    private static string GetStatusLabel(bool? active)
+    {
+        if (active is null) return "—";
+        return active.Value ? "Активен" : "Не активен";
+    }
+
+    private string GetStatusClass() => _profile?.IsActive == true ? "ok" : "err";
+
+    private string GetLastSessionStatusText()
+    {
+        if (_lastSession is null)
+            return "Сессий пока не было";
+
+        return (WorkStatus)_lastSession.Status switch
+        {
+            WorkStatus.Working => "Работает",
+            WorkStatus.Paused => "Приостановил работы",
+            WorkStatus.Completed => $"Последний раз был в работе — {FormatDateTime(_lastSession.EndedAtUtc ?? _lastSession.StartedAtUtc)}",
+            _ => "Нет данных"
+        };
+    }
+
+    private static string FormatDate(DateTime? value)
+        => value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string FormatDateTime(DateTime? value)
+        => value.HasValue ? value.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "—";
+
+    private async Task LogoutAsync()
+    {
+        await AuthVm.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+}

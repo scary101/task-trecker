@@ -1,0 +1,90 @@
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (!string.IsNullOrWhiteSpace(SiteKey))
+{
+    <div class="cf-turnstile" @ref="_container"></div>
+}
+
+@code {
+    private ElementReference _container;
+    private DotNetObjectReference<TurnstileCaptcha>? _dotNetRef;
+    private string? _widgetId;
+    private bool _rendered;
+    private bool _disposed;
+
+    [Parameter] public string? SiteKey { get; set; }
+    [Parameter] public string Theme { get; set; } = "auto";
+    [Parameter] public EventCallback<string> TokenChanged { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_disposed)
+            return;
+
+        if (_rendered)
+            return;
+
+        if (string.IsNullOrWhiteSpace(SiteKey))
+            return;
+
+        _dotNetRef = DotNetObjectReference.Create(this);
+        _widgetId = await JS.InvokeAsync<string>(
+            "steptreckTurnstile.render",
+            _container,
+            SiteKey,
+            Theme,
+            _dotNetRef);
+        _rendered = true;
+    }
+
+    [JSInvokable]
+    public async Task OnTurnstileSuccess(string token)
+    {
+        await TokenChanged.InvokeAsync(token);
+    }
+
+    [JSInvokable]
+    public async Task OnTurnstileExpired()
+    {
+        await TokenChanged.InvokeAsync("");
+    }
+
+    [JSInvokable]
+    public async Task OnTurnstileError()
+    {
+        await TokenChanged.InvokeAsync("");
+    }
+
+    public async Task ResetAsync()
+    {
+        if (_disposed)
+            return;
+
+        await TokenChanged.InvokeAsync("");
+
+        if (!string.IsNullOrWhiteSpace(_widgetId))
+        {
+            var reset = await JS.InvokeAsync<bool>("steptreckTurnstile.reset", _widgetId);
+            if (reset)
+                return;
+
+            _widgetId = await JS.InvokeAsync<string>(
+                "steptreckTurnstile.rerender",
+                _container,
+                SiteKey,
+                Theme,
+                _dotNetRef);
+        }
+    }
+
+    public void Dispose()
+    {
+        _disposed = true;
+
+        if (!string.IsNullOrWhiteSpace(_widgetId))
+            _ = JS.InvokeVoidAsync("steptreckTurnstile.remove", _widgetId);
+
+        _dotNetRef?.Dispose();
+    }
+}

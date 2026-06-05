@@ -1,0 +1,389 @@
+﻿@page "/subscription/checkout"
+@using steptreck.Domain.DTOs.PlanDTOs
+@using steptreck.Domain.DTOs.SubscriptionsDTOs
+@using steptreck.Web.ViewModel
+@inject steptreck.Web.ViewModel.PlanVM PlansVm
+@inject steptreck.Web.ViewModel.SubscriptionsViewModel SubsVm
+@inject NavigationManager Nav
+
+<PageTitle>Оформление подписки — StepTreck</PageTitle>
+
+<main class="page checkout-page">
+    <section class="checkout-head">
+        <div>
+            <h1>Оформление подписки</h1>
+            <p class="section-subtitle">Введи платёжные данные. Карта используется как заглушка.</p>
+        </div>
+        <a class="btn ghost" href="/#plans">Назад</a>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(_alert))
+    {
+        <div class="alert @(_alertKind)">@_alert</div>
+    }
+
+    @if (!HasCheckoutTarget)
+    {
+        <section class="checkout-empty card">
+            Подписка для оплаты не найдена. Вернитесь к выбору тарифа или настройке конфигурации.
+        </section>
+    }
+    else
+    {
+        <section class="checkout-grid">
+            <section class="checkout-form card">
+                <h2>Платёжные данные</h2>
+                <EditForm Model="_form" OnValidSubmit="SubmitAsync">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label class="label">Номер карты</label>
+                            <input class="input"
+                                   value="@_form.CardNumber"
+                                   placeholder="0000 0000 0000 0000"
+                                   maxlength="19"
+                                   inputmode="numeric"
+                                   autocomplete="cc-number"
+                                   data-digits-only
+                                   @oninput="OnCardNumberInput" />
+                        </div>
+                        <div class="field">
+                            <label class="label">ММ/ГГ</label>
+                            <input class="input"
+                                   value="@_form.Expiry"
+                                   placeholder="MM/YY"
+                                   maxlength="5"
+                                   inputmode="numeric"
+                                   autocomplete="cc-exp"
+                                   data-digits-only
+                                   @oninput="OnExpiryInput" />
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn primary" type="submit" disabled="@_busy">Оплатить и активировать</button>
+                        <span class="hint">Данные карты не сохраняются.</span>
+                    </div>
+                </EditForm>
+            </section>
+
+            <aside class="checkout-summary card">
+                <h3>Сводка</h3>
+                <div class="summary-row">
+                    <span>Тариф</span>
+                    <strong>@CheckoutTitle</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Срок</span>
+                    <strong>@_months мес.</strong>
+                </div>
+                @if (_isCustom)
+                {
+                    <div class="summary-row">
+                        <span>Участники</span>
+                        <strong>@_customModel.MebmersCount</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Команды</span>
+                        <strong>@_customModel.TeamsCount</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Проекты</span>
+                        <strong>@_customModel.ProjectsCount</strong>
+                    </div>
+                }
+                <div class="summary-row">
+                    <span>Стоимость</span>
+                    <strong>@GetPriceLabel()</strong>
+                </div>
+                <div class="summary-note">
+                    Подтвердите оплату, чтобы активировать подписку для всей организации.
+                </div>
+            </aside>
+        </section>
+    }
+</main>
+
+@code {
+    private int? _planId;
+    private int _months = 1;
+    private bool _isCustom;
+    private PlanPublicDto? _plan;
+    private IReadOnlyList<SubscriptionItemDto> _customConfig = [];
+    private CreateCustomSubDto _customModel = new() { MonthCount = 1 };
+    private CheckoutForm _form = new();
+    private bool _busy;
+    private string? _alert;
+    private string _alertKind = "ok";
+
+    private bool HasCheckoutTarget => _isCustom || _planId.HasValue;
+    private string CheckoutTitle => _isCustom ? "Кастомная подписка" : _plan?.Name ?? "—";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isCustom = IsCustomCheckout();
+        _planId = ParsePlanId();
+        _months = ParseMonths();
+
+        if (_isCustom)
+        {
+            _customModel = new CreateCustomSubDto
+            {
+                MonthCount = _months,
+                MebmersCount = ParseQueryInt("members", 0),
+                TeamsCount = ParseQueryInt("teams", 0),
+                ProjectsCount = ParseQueryInt("projects", 0)
+            };
+            _customConfig = await SubsVm.GetConfigAsync();
+        }
+        else if (_planId is null)
+        {
+            _alertKind = "err";
+            _alert = "Не найден тариф для оформления.";
+            return;
+        }
+
+        if (!_isCustom && _planId.HasValue)
+            _plan = await PlansVm.GetByIdAsync(_planId.Value);
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!HasCheckoutTarget)
+        {
+            _alertKind = "err";
+            _alert = "Подписка не найдена.";
+            return;
+        }
+
+        if (_months <= 0)
+        {
+            _alertKind = "err";
+            _alert = "Срок должен быть больше 0 месяцев.";
+            return;
+        }
+
+        if (!ValidateCardNumber(out var cardError))
+        {
+            _alertKind = "err";
+            _alert = cardError;
+            return;
+        }
+
+        if (!ValidateExpiry(out var expiryError))
+        {
+            _alertKind = "err";
+            _alert = expiryError;
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+
+        try
+        {
+            var result = _isCustom
+                ? ToApiResult(await SubsVm.CreateCustomSubscriptionAsync(_customModel))
+                : await SubsVm.SubscribeAsync(new BySubDto
+                {
+                    PlanId = _planId!.Value,
+                    MonthCount = _months
+                });
+
+            if (result.Success)
+            {
+                _alertKind = "ok";
+                _alert = result.Message ?? "Подписка оформлена. Перенаправляем...";
+                await Task.Delay(800);
+                Nav.NavigateTo("/#plans", forceLoad: true);
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось оформить подписку. Попробуйте ещё раз.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private int? ParsePlanId()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = uri.Query;
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length == 2 && string.Equals(kv[0], "planId", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(Uri.UnescapeDataString(kv[1]), out var id))
+                    return id;
+            }
+        }
+
+        return null;
+    }
+
+    private bool IsCustomCheckout()
+    {
+        var value = ParseQueryString("mode");
+        return string.Equals(value, "custom", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private int ParseMonths()
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = uri.Query;
+        if (string.IsNullOrWhiteSpace(query))
+            return 1;
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length == 2 && string.Equals(kv[0], "months", StringComparison.OrdinalIgnoreCase))
+            {
+                if (int.TryParse(Uri.UnescapeDataString(kv[1]), out var value) && value > 0)
+                    return value;
+            }
+        }
+
+        return 1;
+    }
+
+    private int ParseQueryInt(string key, int fallback)
+    {
+        var value = ParseQueryString(key);
+        return int.TryParse(value, out var parsed) ? Math.Max(parsed, 0) : fallback;
+    }
+
+    private string? ParseQueryString(string key)
+    {
+        var uri = new Uri(Nav.Uri);
+        var query = uri.Query;
+        if (string.IsNullOrWhiteSpace(query))
+            return null;
+
+        foreach (var part in query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv.Length == 2 && string.Equals(kv[0], key, StringComparison.OrdinalIgnoreCase))
+                return Uri.UnescapeDataString(kv[1]);
+        }
+
+        return null;
+    }
+
+    private string GetPriceLabel()
+    {
+        if (_isCustom)
+        {
+            var monthly = CalculateCustomMonthly();
+            var total = monthly * Math.Max(_customModel.MonthCount, 1);
+            return $"{total:0.##} RUB";
+        }
+
+        if (_plan is null) return "—";
+        var totalCents = _plan.BasePriceCents * _months;
+        var value = totalCents / 100.0m;
+        var cur = string.IsNullOrWhiteSpace(_plan.Currency) ? "RUB" : _plan.Currency;
+        return $"{value:0.##} {cur}";
+    }
+
+    private decimal CalculateCustomMonthly()
+    {
+        decimal total = 0;
+        total += FindConfig("Базовая лицензия")?.PricePerUnit ?? 0m;
+        total += (FindConfig("Участники")?.PricePerUnit ?? 0m) * _customModel.MebmersCount;
+        total += (FindConfig("Команды")?.PricePerUnit ?? 0m) * _customModel.TeamsCount;
+        total += (FindConfig("Проекты")?.PricePerUnit ?? 0m) * _customModel.ProjectsCount;
+        return total;
+    }
+
+    private SubscriptionItemDto? FindConfig(string name)
+        => _customConfig.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    private static SubscriptionsViewModel.ApiResult ToApiResult(SubscriptionsViewModel.ApiResult<long> result)
+        => new(result.Success, result.Message, result.Error);
+
+    private void OnCardNumberInput(ChangeEventArgs e)
+    {
+        _form.CardNumber = FormatCardNumber(e.Value?.ToString());
+    }
+
+    private void OnExpiryInput(ChangeEventArgs e)
+    {
+        _form.Expiry = FormatExpiry(e.Value?.ToString());
+    }
+
+    private bool ValidateCardNumber(out string? error)
+    {
+        var digits = GetCardDigits(_form.CardNumber);
+        if (digits.Length != 16)
+        {
+            error = "Введите номер карты: ровно 16 цифр.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private bool ValidateExpiry(out string? error)
+    {
+        var digits = GetCardDigits(_form.Expiry);
+        if (digits.Length != 4)
+        {
+            error = "Введите срок действия карты в формате ММ/ГГ.";
+            return false;
+        }
+
+        var month = int.Parse(digits[..2]);
+        if (month < 1 || month > 12)
+        {
+            error = "Месяц карты должен быть от 01 до 12.";
+            return false;
+        }
+
+        var year = 2000 + int.Parse(digits[2..]);
+        var expiryDate = new DateTime(year, month, DateTime.DaysInMonth(year, month));
+        if (expiryDate < DateTime.Today)
+        {
+            error = "Срок действия карты уже истек.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static string FormatCardNumber(string? value)
+    {
+        var digits = GetCardDigits(value);
+        if (digits.Length > 16)
+            digits = digits[..16];
+
+        return string.Join(" ", Enumerable.Range(0, (digits.Length + 3) / 4)
+            .Select(i => digits.Substring(i * 4, Math.Min(4, digits.Length - i * 4))));
+    }
+
+    private static string GetCardDigits(string? value)
+        => new((value ?? string.Empty).Where(char.IsDigit).ToArray());
+
+    private static string FormatExpiry(string? value)
+    {
+        var digits = GetCardDigits(value);
+        if (digits.Length > 4)
+            digits = digits[..4];
+
+        return digits.Length <= 2 ? digits : $"{digits[..2]}/{digits[2..]}";
+    }
+
+    private sealed class CheckoutForm
+    {
+        public string CardNumber { get; set; } = "";
+        public string Expiry { get; set; } = "";
+    }
+}

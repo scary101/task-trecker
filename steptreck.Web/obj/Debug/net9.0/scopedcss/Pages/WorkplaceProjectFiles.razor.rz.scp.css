@@ -1,0 +1,74 @@
+.project-files-page[b-982541tkgk] {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.files-shell[b-982541tkgk] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.section-head[b-982541tkgk] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.files-empty[b-982541tkgk] {
+    padding: 16px;
+    color: var(--text-secondary);
+}
+
+.files-list[b-982541tkgk] {
+    display: grid;
+    gap: 12px;
+}
+
+.file-card[b-982541tkgk] {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-actions[b-982541tkgk] {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-main[b-982541tkgk] {
+    display: grid;
+    gap: 6px;
+}
+
+.file-name[b-982541tkgk] {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.file-meta[b-982541tkgk] {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+
+.meta-dot[b-982541tkgk] {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.file-upload input[type="file"][b-982541tkgk] {
+    display: none;
+}
+

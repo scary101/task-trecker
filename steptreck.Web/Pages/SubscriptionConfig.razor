@@ -1,0 +1,417 @@
+﻿@page "/subscription/config"
+@using steptreck.Domain.DTOs.SubscriptionsDTOs
+@inject steptreck.Web.ViewModel.SubscriptionsViewModel SubsVm
+@inject NavigationManager Nav
+
+<PageTitle>Конфиг подписки - StepTreck</PageTitle>
+
+<main class="sub-config-page">
+    <section class="config-hero">
+        <div class="hero-copy">
+            <div class="hero-kicker">Subscription Config</div>
+            <h1>Соберите конфигурацию подписки под свою команду</h1>
+            <p>
+                Настройте лимиты через конфигуратор, сразу увидьте стоимость за месяц
+                и перейдите к оплате на нужный срок.
+            </p>
+
+            <div class="hero-points">
+                <div class="hero-point">Гибкая настройка лимитов</div>
+                <div class="hero-point">Моментальный расчет стоимости</div>
+                <div class="hero-point">Ручной ввод и ползунки</div>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(_alert))
+    {
+        <div class="alert @(_alertKind)">@_alert</div>
+    }
+
+    @if (_loading)
+    {
+        <section class="card config-loading">Загружаем конфигурацию подписки...</section>
+    }
+    else
+    {
+        <section class="config-shell">
+            <div class="config-main">
+                <section class="config-section card">
+                    <div class="section-head">
+                        <div class="section-index">1</div>
+                        <div>
+                            <h2>Параметры конфигурации</h2>
+                            <p>Меняйте лимиты ползунками или вводите значения вручную. Все числа автоматически приводятся к допустимому шагу.</p>
+                        </div>
+                    </div>
+
+                    @if (_variableItems.Count == 0)
+                    {
+                        <div class="empty-state">
+                            API не вернул конфигурацию подписки или она недоступна без авторизации.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="control-list">
+                            @for (var i = 0; i < _variableItems.Count; i++)
+                            {
+                                var item = _variableItems[i];
+                                var value = GetValue(item);
+                                var min = ToInt(item.MinQuantity);
+                                var max = ToInt(item.MaxQuantity);
+                                var step = ToStep(item.Step);
+                                var delta = item.PricePerUnit * value;
+
+                                <article class="control-card">
+                                    <div class="control-top">
+                                        <div class="control-order">@(i + 1)</div>
+                                        <div class="control-copy">
+                                            <div class="control-title-row">
+                                                <h3>@item.Name</h3>
+                                                <span class="price-tag">+@FormatMoney(delta)</span>
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(item.Description))
+                                            {
+                                                <p>@item.Description</p>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="control-track-row">
+                                        <div class="range-wrap">
+                                            <div class="range-meta">
+                                                <span>От @FormatDecimal(item.MinQuantity) до @FormatDecimal(item.MaxQuantity)</span>
+                                                <span>Шаг @FormatDecimal(item.Step)</span>
+                                            </div>
+                                            <input type="range"
+                                                   min="@min"
+                                                   max="@max"
+                                                   step="@step"
+                                                   value="@value"
+                                                   @oninput="@(e => OnRangeChanged(item, e))" />
+                                        </div>
+
+                                        <div class="value-stepper" aria-label="@item.Name">
+                                            <button type="button" class="value-btn" @onclick="() => ChangeValue(item, -ToStep(item.Step))">
+                                                <span>−</span>
+                                            </button>
+
+                                            <div class="value-pill">
+                                                <span>@value</span>
+                                            </div>
+
+                                            <button type="button" class="value-btn" @onclick="() => ChangeValue(item, ToStep(item.Step))">
+                                                <span>+</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </section>
+
+                <section class="config-section card">
+                    <div class="section-head">
+                        <div class="section-index">2</div>
+                        <div>
+                            <h2>Срок подписки</h2>
+                            <p>Выберите длительность подписки в месяцах.</p>
+                        </div>
+                    </div>
+
+                    <div class="duration-zone">
+                        <div class="duration-presets">
+                            @foreach (var months in _presetMonths)
+                            {
+                                <button class="preset-chip @GetPresetClass(months)"
+                                        type="button"
+                                        @onclick="() => SetMonths(months)">
+                                    @months мес
+                                </button>
+                            }
+                        </div>
+
+                        <div class="duration-custom">
+                            <label class="label">Срок, месяцев</label>
+                            <div class="value-stepper">
+                                <button type="button" class="value-btn" @onclick="() => ChangeMonths(-1)">−</button>
+
+                                <div class="value-pill">
+                                    @_model.MonthCount
+                                </div>
+
+                                <button type="button" class="value-btn" @onclick="() => ChangeMonths(1)">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <aside class="summary-panel card">
+                <div class="summary-kicker">Итог</div>
+                <h2>@FormatMoney(_estimatedTotal)</h2>
+                <p class="summary-subtitle">Полная стоимость за @_model.MonthCount мес.</p>
+
+                <div class="summary-rows">
+                    <div class="summary-row">
+                        <span>Базовая лицензия / мес</span>
+                        <strong>@FormatMoney(_baseMonthly)</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>Конфигурация / мес</span>
+                        <strong>@FormatMoney(_estimatedMonthly)</strong>
+                    </div>
+                    <div class="summary-row accent">
+                        <span>Итого за срок</span>
+                        <strong>@FormatMoney(_estimatedTotal)</strong>
+                    </div>
+                </div>
+
+                <div class="summary-config">
+                    @foreach (var item in _variableItems)
+                    {
+                        <div class="summary-config-row">
+                            <span>@item.Name</span>
+                            <strong>@GetValue(item)</strong>
+                        </div>
+                    }
+                </div>
+
+                @if (_baseConfig is not null)
+                {
+                    <div class="summary-note">
+                        Базовая лицензия: @FormatMoney(_baseConfig.PricePerUnit) / мес
+                    </div>
+                }
+
+                <div class="summary-actions">
+                    <button class="btn primary wide"
+                            type="button"
+                            @onclick="CreateAsync"
+                            disabled="@(_busy || _variableItems.Count == 0)">
+                        Перейти к оплате
+                    </button>
+                    <button class="btn ghost wide" type="button" @onclick="ResetToMinimums" disabled="@_busy">
+                        Сбросить к минимуму
+                    </button>
+                </div>
+            </aside>
+        </section>
+    }
+</main>
+
+@code {
+    private readonly int[] _presetMonths = [1, 3, 6, 12];
+
+    private bool _loading = true;
+    private bool _busy;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private List<SubscriptionItemDto> _config = new();
+    private CreateCustomSubDto _model = new() { MonthCount = 1 };
+
+    private SubscriptionItemDto? _baseConfig;
+    private SubscriptionItemDto? _membersConfig;
+    private SubscriptionItemDto? _teamsConfig;
+    private SubscriptionItemDto? _projectsConfig;
+
+    private List<SubscriptionItemDto> _variableItems =>
+        [.. new[] { _membersConfig, _teamsConfig, _projectsConfig }.Where(x => x is not null)!];
+
+    private decimal _baseMonthly => _baseConfig?.PricePerUnit ?? 0m;
+    private decimal _estimatedMonthly => CalculateEstimatePerMonth();
+    private decimal _estimatedTotal => _estimatedMonthly * Math.Max(_model.MonthCount, 0);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+
+        _config = (await SubsVm.GetConfigAsync()).ToList();
+        BindConfigs();
+        ResetToMinimums();
+
+        _loading = false;
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadAsync();
+    }
+
+    private void BindConfigs()
+    {
+        _baseConfig = FindConfig("Базовая лицензия");
+        _membersConfig = FindConfig("Участники");
+        _teamsConfig = FindConfig("Команды");
+        _projectsConfig = FindConfig("Проекты");
+    }
+
+    private SubscriptionItemDto? FindConfig(string name)
+        => _config.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    private void ResetToMinimums()
+    {
+        _model.MebmersCount = NormalizeValue(ToInt(_membersConfig?.MinQuantity ?? 0), _membersConfig);
+        _model.TeamsCount = NormalizeValue(ToInt(_teamsConfig?.MinQuantity ?? 0), _teamsConfig);
+        _model.ProjectsCount = NormalizeValue(ToInt(_projectsConfig?.MinQuantity ?? 0), _projectsConfig);
+        _model.MonthCount = Math.Max(_model.MonthCount, 1);
+    }
+
+    private void SetMonths(int months)
+    {
+        _model.MonthCount = Math.Max(months, 1);
+    }
+
+    private void ChangeMonths(int delta)
+    {
+        _model.MonthCount = Math.Max(_model.MonthCount + delta, 1);
+    }
+
+    private int GetValue(SubscriptionItemDto item)
+    {
+        if (ReferenceEquals(item, _membersConfig))
+            return _model.MebmersCount;
+        if (ReferenceEquals(item, _teamsConfig))
+            return _model.TeamsCount;
+        if (ReferenceEquals(item, _projectsConfig))
+            return _model.ProjectsCount;
+
+        return 0;
+    }
+
+    private void OnRangeChanged(SubscriptionItemDto item, ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var value))
+            return;
+
+        SetValue(item, value);
+    }
+
+    private void ChangeValue(SubscriptionItemDto item, int delta)
+    {
+        SetValue(item, GetValue(item) + delta);
+    }
+
+    private void SetValue(SubscriptionItemDto item, int? value)
+    {
+        if (!value.HasValue)
+            return;
+
+        var normalized = NormalizeValue(value.Value, item);
+
+        if (ReferenceEquals(item, _membersConfig))
+            _model.MebmersCount = normalized;
+        else if (ReferenceEquals(item, _teamsConfig))
+            _model.TeamsCount = normalized;
+        else if (ReferenceEquals(item, _projectsConfig))
+            _model.ProjectsCount = normalized;
+    }
+
+    private async Task CreateAsync()
+    {
+        _alert = null;
+
+        if (!ValidateModel(out var error))
+        {
+            _alertKind = "err";
+            _alert = error;
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await Task.Yield();
+            var query = string.Join("&", new[]
+            {
+                "mode=custom",
+                $"months={_model.MonthCount}",
+                $"members={_model.MebmersCount}",
+                $"teams={_model.TeamsCount}",
+                $"projects={_model.ProjectsCount}"
+            });
+
+            Nav.NavigateTo($"/subscription/checkout?{query}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private bool ValidateModel(out string? error)
+    {
+        _model.MonthCount = Math.Max(_model.MonthCount, 1);
+        _model.MebmersCount = NormalizeValue(_model.MebmersCount, _membersConfig);
+        _model.TeamsCount = NormalizeValue(_model.TeamsCount, _teamsConfig);
+        _model.ProjectsCount = NormalizeValue(_model.ProjectsCount, _projectsConfig);
+
+        if (_membersConfig is null || _teamsConfig is null || _projectsConfig is null || _baseConfig is null)
+        {
+            error = "Конфигурация подписки загружена не полностью.";
+            return false;
+        }
+
+        error = null;
+        return true;
+    }
+
+    private static int NormalizeValue(int value, SubscriptionItemDto? config)
+    {
+        if (config is null)
+            return Math.Max(value, 0);
+
+        var min = ToInt(config.MinQuantity);
+        var max = ToInt(config.MaxQuantity);
+        var step = ToStep(config.Step);
+
+        var normalized = Math.Max(value, min);
+        if (max >= min)
+            normalized = Math.Min(normalized, max);
+
+        if (normalized < min)
+            return min;
+
+        var offset = normalized - min;
+        return min + (offset / step) * step;
+    }
+
+    private decimal CalculateEstimatePerMonth()
+    {
+        var total = _baseMonthly;
+        total += CalculateItem(_membersConfig, _model.MebmersCount);
+        total += CalculateItem(_teamsConfig, _model.TeamsCount);
+        total += CalculateItem(_projectsConfig, _model.ProjectsCount);
+        return total;
+    }
+
+    private static decimal CalculateItem(SubscriptionItemDto? config, int quantity)
+        => config is null ? 0m : config.PricePerUnit * quantity;
+
+    private string GetPresetClass(int months)
+        => _model.MonthCount == months ? "active" : string.Empty;
+
+    private static string GetMiddleLabel(SubscriptionItemDto item)
+        => string.IsNullOrWhiteSpace(item.Unit) ? "шаг" : item.Unit;
+
+    private static int ToInt(decimal value)
+        => (int)Math.Round(value, MidpointRounding.AwayFromZero);
+
+    private static int ToStep(decimal value)
+        => Math.Max(1, ToInt(value));
+
+    private static string FormatMoney(decimal value)
+        => $"{value:0.##} руб";
+
+    private static string FormatDecimal(decimal value)
+        => value == Math.Truncate(value) ? $"{value:0}" : $"{value:0.##}";
+}

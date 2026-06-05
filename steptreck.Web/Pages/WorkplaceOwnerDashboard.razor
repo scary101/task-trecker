@@ -1,0 +1,306 @@
+﻿@page "/workplace/owner-dashboard"
+@using steptreck.Domain.DTOs.OwnerDashboardDTOs
+@inject steptreck.Web.ViewModel.OwnerDashboardViewModel DashboardVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<PageTitle>Панель руководителя — StepTreck</PageTitle>
+
+<main class="page owner-dashboard-page">
+    <section class="owner-head">
+        <div>
+            <h1>Сводка руководителя</h1>
+            <p class="section-subtitle">@(_dashboard?.Organization.Name ?? "Организация") · управление состоянием команды, задач и подписки.</p>
+        </div>
+        <button class="btn ghost" type="button" @onclick="LoadAsync" disabled="@_loading">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            <span>Обновить</span>
+        </button>
+    </section>
+
+    @if (_loading)
+    {
+        <section class="owner-empty card">Загружаем сводку...</section>
+    }
+    else if (_dashboard is null)
+    {
+        <section class="owner-empty card">Не удалось загрузить данные owner dashboard.</section>
+    }
+    else
+    {
+        <section class="owner-kpis">
+            <article class="owner-kpi card">
+                <span>Участники</span>
+                <strong>@_dashboard.Usage.MembersCount</strong>
+                <small>@LimitText(_dashboard.Usage.MaxMembers, _dashboard.Usage.MembersLeft)</small>
+            </article>
+            <article class="owner-kpi card">
+                <span>Проекты</span>
+                <strong>@_dashboard.Usage.ProjectsCount</strong>
+                <small>@LimitText(_dashboard.Usage.MaxProjects, _dashboard.Usage.ProjectsLeft)</small>
+            </article>
+            <article class="owner-kpi card">
+                <span>Команды</span>
+                <strong>@_dashboard.Usage.TeamsCount</strong>
+                <small>@LimitText(_dashboard.Usage.MaxTeams, _dashboard.Usage.TeamsLeft)</small>
+            </article>
+            <article class="owner-kpi card risk">
+                <span>Просрочено</span>
+                <strong>@_dashboard.TaskRisks.OverdueTasks</strong>
+                <small>@_dashboard.TaskRisks.DueThisWeekTasks задач на неделе</small>
+            </article>
+        </section>
+
+        <section class="owner-grid">
+            <article class="owner-panel subscription-panel card">
+                <div class="panel-head">
+                    <div>
+                        <h2>Подписка</h2>
+                        <p>@(_dashboard.Subscription.PlanName ?? "План не выбран")</p>
+                    </div>
+                    <span class="status-badge @(_dashboard.Subscription.HasActive ? "ok" : "warn")">
+                        @(_dashboard.Subscription.HasActive ? "Активна" : "Не активна")
+                    </span>
+                </div>
+                <div class="owner-facts">
+                    <div>
+                        <span>Период</span>
+                        <strong>@FormatDate(_dashboard.Subscription.StartDateUtc) — @FormatDate(_dashboard.Subscription.EndDateUtc)</strong>
+                    </div>
+                    <div>
+                        <span>Осталось</span>
+                        <strong>@(_dashboard.Subscription.DaysLeft?.ToString() ?? "—") дней</strong>
+                    </div>
+                    <div>
+                        <span>Стоимость/мес</span>
+                        <strong>@FormatPrice(_dashboard.Subscription.PriceCentsPerMonth, _dashboard.Subscription.Currency)</strong>
+                    </div>
+                </div>
+                <div class="feature-row">
+                    <span class="feature-chip @(_dashboard.Usage.CanInviteMember ? "on" : "off")">Инвайты</span>
+                    <span class="feature-chip @(_dashboard.Usage.CanCreateProject ? "on" : "off")">Проекты</span>
+                    <span class="feature-chip @(_dashboard.Usage.CanCreateTeam ? "on" : "off")">Команды</span>
+                </div>
+            </article>
+
+            <article class="owner-panel card">
+                <div class="panel-head">
+                    <div>
+                        <h2>Рабочая активность</h2>
+                        <p>Сессии и отработанное время</p>
+                    </div>
+                    <i class="bi bi-stopwatch" aria-hidden="true"></i>
+                </div>
+                <div class="metric-list">
+                    <div><span>Активные</span><strong>@_dashboard.Workload.ActiveSessions</strong></div>
+                    <div><span>В работе</span><strong>@_dashboard.Workload.WorkingSessions</strong></div>
+                    <div><span>Пауза</span><strong>@_dashboard.Workload.PausedSessions</strong></div>
+                    <div><span>Сегодня</span><strong>@FormatDuration(_dashboard.Workload.WorkedSecondsToday)</strong></div>
+                    <div><span>7 дней</span><strong>@FormatDuration(_dashboard.Workload.WorkedSecondsLast7Days)</strong></div>
+                </div>
+            </article>
+
+            <article class="owner-panel card">
+                <div class="panel-head">
+                    <div>
+                        <h2>Риски задач</h2>
+                        <p>Задачи без движения и дедлайны</p>
+                    </div>
+                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                </div>
+                <div class="metric-list">
+                    <div><span>Всего активных</span><strong>@_dashboard.TaskRisks.TotalActiveTasks</strong></div>
+                    <div><span>Без ответственного</span><strong>@_dashboard.TaskRisks.UnassignedTasks</strong></div>
+                    <div><span>Сегодня</span><strong>@_dashboard.TaskRisks.DueTodayTasks</strong></div>
+                    <div><span>Просрочено</span><strong>@_dashboard.TaskRisks.OverdueTasks</strong></div>
+                    <div><span>Missed</span><strong>@_dashboard.TaskRisks.MissedTasks</strong></div>
+                </div>
+            </article>
+
+            <article class="owner-panel card">
+                <div class="panel-head">
+                    <div>
+                        <h2>Роли</h2>
+                        <p>Состав организации</p>
+                    </div>
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                </div>
+                <div class="role-stack">
+                    @foreach (var role in _dashboard.Roles)
+                    {
+                        <div class="role-row">
+                            <span>@GetRoleLabel(role.RoleName)</span>
+                            <strong>@role.Count</strong>
+                        </div>
+                    }
+                </div>
+            </article>
+        </section>
+
+        <section class="owner-section">
+            <div class="section-head tight">
+                <div>
+                    <h2>Проекты</h2>
+                    <p class="section-subtitle">Сначала проекты с наибольшим риском по дедлайнам.</p>
+                </div>
+            </div>
+            <div class="owner-table">
+                <div class="owner-row head">
+                    <span>Проект</span>
+                    <span>Команды</span>
+                    <span>Участники</span>
+                    <span>Активные задачи</span>
+                    <span>Просрочено</span>
+                    <span>Готово</span>
+                </div>
+                @foreach (var project in _dashboard.Projects)
+                {
+                    <div class="owner-row">
+                        <span>@project.ProjectName</span>
+                        <span>@project.TeamsCount</span>
+                        <span>@project.MembersCount</span>
+                        <span>@project.ActiveTasks</span>
+                        <span class="@ToneClass(project.OverdueTasks)">@project.OverdueTasks</span>
+                        <span>@project.DoneTasks</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="owner-split">
+            <article class="owner-section">
+                <div class="section-head tight">
+                    <div>
+                        <h2>Команды</h2>
+                        <p class="section-subtitle">Топ команд по нагрузке и просрочкам.</p>
+                    </div>
+                </div>
+                <div class="compact-list">
+                    @foreach (var team in _dashboard.Teams)
+                    {
+                        <div class="compact-item card">
+                            <div>
+                                <strong>@team.TeamName</strong>
+                                <span>@team.ProjectName</span>
+                            </div>
+                            <div class="compact-stats">
+                                <span>@team.MembersCount уч.</span>
+                                <span>@team.ActiveTasks задач</span>
+                                <span class="@ToneClass(team.OverdueTasks)">@team.OverdueTasks проср.</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </article>
+
+            <article class="owner-section">
+                <div class="section-head tight">
+                    <div>
+                        <h2>Участники риска</h2>
+                        <p class="section-subtitle">Низкий trust, просрочки и высокий miss rate.</p>
+                    </div>
+                </div>
+                <div class="compact-list">
+                    @foreach (var member in _dashboard.MemberRisks)
+                    {
+                        <div class="compact-item card">
+                            <div>
+                                <strong>@member.FullName</strong>
+                                <span>@GetRoleLabel(member.RoleName) · trust @member.Trust</span>
+                            </div>
+                            <div class="compact-stats">
+                                <span>@member.ActiveTasks задач</span>
+                                <span class="@ToneClass(member.OverdueTasks)">@member.OverdueTasks проср.</span>
+                                <span>@member.MissRate%</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </article>
+        </section>
+
+        <section class="owner-section">
+            <div class="section-head tight">
+                <div>
+                    <h2>Последние платежи</h2>
+                    <p class="section-subtitle">Финансовые операции организации.</p>
+                </div>
+            </div>
+            <div class="owner-table payments">
+                <div class="owner-row head">
+                    <span>ID</span>
+                    <span>Сумма</span>
+                    <span>Статус</span>
+                    <span>Причина</span>
+                    <span>Дата</span>
+                    <span>Чек</span>
+                </div>
+                @foreach (var payment in _dashboard.RecentPayments)
+                {
+                    <div class="owner-row">
+                        <span class="mono">#@payment.Id</span>
+                        <span>@FormatPrice(payment.AmountCents, payment.Currency)</span>
+                        <span>@payment.Status</span>
+                        <span>@payment.Reason</span>
+                        <span>@FormatDate(payment.PaidAtUtc ?? payment.CreatedAtUtc)</span>
+                        <span>@(payment.HasReceipt ? "Есть" : "—")</span>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</main>
+
+@code {
+    private OwnerDashboardDto? _dashboard;
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _dashboard = await DashboardVm.GetDashboardAsync();
+        _loading = false;
+    }
+
+    private static string LimitText(int? max, int? left)
+    {
+        if (!max.HasValue)
+            return "без лимита";
+
+        return $"лимит {max.Value}, осталось {left ?? 0}";
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("dd.MM.yyyy") : "—";
+    }
+
+    private static string FormatPrice(int cents, string? currency)
+    {
+        if (cents <= 0)
+            return "—";
+
+        var value = cents / 100m;
+        return $"{value:N0} {currency ?? "RUB"}";
+    }
+
+    private static string FormatDuration(long seconds)
+    {
+        if (seconds <= 0)
+            return "0ч";
+
+        var ts = TimeSpan.FromSeconds(seconds);
+        return ts.TotalHours >= 1
+            ? $"{(int)ts.TotalHours}ч {ts.Minutes}м"
+            : $"{ts.Minutes}м";
+    }
+
+    private static string ToneClass(int value) => value > 0 ? "tone-risk" : "tone-ok";
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+}

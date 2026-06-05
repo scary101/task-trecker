@@ -1,0 +1,323 @@
+﻿@page "/workplace/projects"
+@using steptreck.Domain.DTOs.ProjectDTOs
+@inject steptreck.Web.ViewModel.ProjectsViewModel ProjectsVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page projects-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>Проекты</h1>
+                <p class="section-subtitle">Создавайте проекты и управляйте ими в одном месте.</p>
+            </div>
+            <button class="btn primary" type="button" @onclick="OpenCreateModal">Создать проект</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert @(_alertKind)">@_alert</div>
+        }
+
+        <section class="projects-grid">
+            @if (_loading)
+            {
+                <div class="projects-empty card">Загружаем проекты...</div>
+            }
+            else if (_projects.Count == 0)
+            {
+                <div class="projects-empty card">Пока нет проектов. Создайте первый.</div>
+            }
+            else
+            {
+                @foreach (var p in _projects)
+                {
+                    <article class="project-card card @(HasProjectBackground(p) ? "has-bg" : "")"
+                             style="@GetProjectBackgroundStyle(p)"
+                             role="button"
+                             tabindex="0"
+                             @onclick="() => OpenProject(p.Id)">
+                        <div class="project-top">
+                            <div>
+                                <div class="project-title">@p.Name</div>
+                                <div class="project-meta">
+                                    <span class="pill">@GetStatusLabel(p.IsArchived)</span>
+                                    <span class="meta-dot"></span>
+                                    <span>@FormatDate(p.CreatedAt)</span>
+                                </div>
+                            </div>
+                            <div class="project-id">#@p.Id</div>
+                        </div>
+                        <p class="project-desc">@(!string.IsNullOrWhiteSpace(p.Description) ? p.Description : "Описание проекта не задано.")</p>
+                        <div class="project-footer">
+                            @if (!string.IsNullOrWhiteSpace(p.GitUrl))
+                            {
+                                <a class="muted-link" href="@p.GitUrl" target="_blank" rel="noreferrer" @onclick:stopPropagation="true">Git репозиторий</a>
+                            }
+                            else
+                            {
+                                <span class="muted-link">Без репозитория</span>
+                            }
+                            <span class="project-updated">Обновлено: @FormatDate(p.UpdatedAt)</span>
+                            <button class="btn ghost" type="button" disabled="@_busy" @onclick:stopPropagation="true" @onclick="() => OpenDeleteModal(p)">Удалить</button>
+                        </div>
+                    </article>
+                }
+            }
+        </section>
+    </section>
+</main>
+
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop" @onclick="CloseCreateModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-kanban" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Новый проект</h2>
+                        <p>Добавьте описание, чтобы команде было проще ориентироваться.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseCreateModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_create" OnValidSubmit="CreateAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Название</label>
+                        <InputText class="input" @bind-Value="_create.Name" placeholder="Например, мобильное приложение" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputTextArea class="input" @bind-Value="_create.Description" placeholder="Кратко о целях проекта" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Git URL</label>
+                        <InputText class="input" @bind-Value="_create.GitUrl" placeholder="https://github.com/org/repo" />
+                        <ValidationMessage For="@(() => _create.GitUrl)" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Создать</button>
+                    <button class="btn ghost" type="button" @onclick="ResetForm" disabled="@_busy">Очистить</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+
+@if (_showDeleteModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="delete-project-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="delete-project-title">Удалить проект?</h2>
+                        <p>Вы уверены, что хотите удалить проект «@_deleteProjectName»? Команды будут скрыты, задачи уйдут в архив, участники будут откреплены.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteModal" disabled="@_busy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteProjectAsync" disabled="@_busy">Удалить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ProjectReadDto> _projects = new();
+    private ProjectCreateDto _create = new();
+    private bool _loading = true;
+    private bool _busy;
+    private bool _showCreateModal;
+    private bool _showDeleteModal;
+    private int? _deleteProjectId;
+    private string? _deleteProjectName;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase => Config["Api:BaseUrl"]?.TrimEnd('/') ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        if (roleId == TeamLeadRoleId || roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _projects = await ProjectsVm.GetAllAsync();
+        _loading = false;
+    }
+
+    private void OpenCreateModal()
+    {
+        _alert = null;
+        _alertKind = "ok";
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+    }
+
+    private void OpenProject(int id)
+    {
+        Nav.NavigateTo($"/workplace/projects/{id}");
+    }
+
+    private void OpenDeleteModal(ProjectReadDto project)
+    {
+        _deleteProjectId = project.Id;
+        _deleteProjectName = project.Name;
+        _alert = null;
+        _alertKind = "ok";
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+        _deleteProjectId = null;
+        _deleteProjectName = null;
+    }
+
+    private async Task DeleteProjectAsync()
+    {
+        if (!_deleteProjectId.HasValue)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var result = await ProjectsVm.DeleteAsync(_deleteProjectId.Value);
+            if (result.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Проект удалён.";
+                _projects.RemoveAll(p => p.Id == _deleteProjectId.Value);
+                CloseDeleteModal();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось удалить проект.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CreateAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var (result, project) = await ProjectsVm.CreateAsync(_create);
+            if (result.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Проект создан.";
+                ResetForm();
+                CloseCreateModal();
+                if (project is not null)
+                    _projects.Insert(0, project);
+                else
+                    await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось создать проект.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ResetForm()
+    {
+        _create = new ProjectCreateDto();
+    }
+
+    private static string GetStatusLabel(bool isArchived) => isArchived ? "Архив" : "Активен";
+
+    private bool HasProjectBackground(ProjectReadDto project)
+        => !string.IsNullOrWhiteSpace(project.CardBackgroundUrl);
+
+    private string? GetProjectBackgroundStyle(ProjectReadDto project)
+    {
+        var url = ResolveAssetUrl(project.CardBackgroundUrl);
+        return string.IsNullOrWhiteSpace(url)
+            ? null
+            : $"background-image: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.58)), url('{url}');";
+    }
+
+    private string? ResolveAssetUrl(string? rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return null;
+
+        var raw = rawUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        if (string.IsNullOrWhiteSpace(ApiBase) || !Uri.TryCreate(ApiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        return new Uri(baseUri, raw.TrimStart('/')).ToString();
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+    }
+}
+
+

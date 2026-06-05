@@ -1,0 +1,52 @@
+@page "/workplace/audit"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+
+@if (!_roleChecked)
+{
+    <main class="page audit-page">
+        <section class="section">
+            <article class="card">
+                <h1>Проверяем доступ...</h1>
+            </article>
+        </section>
+    </main>
+}
+else if (!_allowAccess)
+{
+    <main class="page audit-page">
+        <section class="section">
+            <article class="card">
+                <h1>Нет доступа</h1>
+                <p>Эта страница доступна только администратору.</p>
+            </article>
+        </section>
+    </main>
+}
+else
+{
+<main class="page audit-page">
+    <section class="section">
+        <AuditLogPanel Scope="organization"
+                       Title="Журнал аудита"
+                       Subtitle="История изменений данных и действий в организации." />
+    </section>
+</main>
+}
+
+@code {
+    private bool _roleChecked;
+    private bool _allowAccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allowAccess = await RoleAccess.IsAdminAsync();
+        _roleChecked = true;
+
+        if (!_allowAccess)
+        {
+            Nav.NavigateTo("/workplace", replace: true);
+        }
+    }
+}

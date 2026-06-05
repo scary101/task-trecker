@@ -1,0 +1,472 @@
+@page "/workplace/sessions/active"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@using steptreck.Domain.DTOs.ProjectDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@using steptreck.Domain.DTOs.WorkSessionDTOs
+@using steptreck.Domain.Enums
+@implements IAsyncDisposable
+@inject steptreck.Web.ViewModel.WorkSessionViewModel WorkSessionVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.ProjectsViewModel ProjectsVm
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject NavigationManager Nav
+
+<main class="page sessions-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>Активные сессии</h1>
+                <p class="section-subtitle">@_subtitle</p>
+            </div>
+            <button class="btn primary" type="button" @onclick="ReloadAsync" disabled="@_loading">Обновить</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert err">@_alert</div>
+        }
+
+        <div class="toolbar-head">
+            <div class="session-summary">Найдено: @FilteredItems.Count · @_scopeLabel</div>
+            <button class="filter-toggle" type="button" @onclick="ToggleFilters" aria-expanded="@(!_filtersCollapsed)">
+                <i class="bi @(_filtersCollapsed ? "bi-chevron-down" : "bi-chevron-up")" aria-hidden="true"></i>
+                <span>@(_filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры")</span>
+            </button>
+        </div>
+
+        @if (!_filtersCollapsed)
+        {
+            <section class="session-toolbar card @(_showOwnerFilters ? "has-owner-filters" : null)">
+                <label class="session-filter search">
+                    <span>Поиск</span>
+                    <input @bind="_searchTerm" @bind:event="oninput" type="search" placeholder="" />
+                </label>
+
+                @if (_showOwnerFilters)
+                {
+                    <label class="session-filter">
+                        <span>Проект</span>
+                        <select value="@_selectedProjectId" @onchange="OnProjectFilterChanged">
+                            <option value="">Все проекты</option>
+                            @foreach (var project in _projects)
+                            {
+                                <option value="@project.Id">@project.Name</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="session-filter">
+                        <span>Команда</span>
+                        <select value="@_selectedTeamId" @onchange="OnTeamFilterChanged" disabled="@(!_ownerTeams.Any())">
+                            <option value="">@(_ownerTeams.Any() ? "Все команды проекта" : "Сначала выберите проект")</option>
+                            @foreach (var team in _ownerTeams)
+                            {
+                                <option value="@team.Id">@team.Name</option>
+                            }
+                        </select>
+                    </label>
+                }
+
+                <label class="session-filter">
+                    <span>Дата</span>
+                    <input value="@_date" @onchange="OnDateChanged" type="date" />
+                </label>
+
+                <label class="session-filter">
+                    <span>Статус</span>
+                    <select @bind="_statusFilter">
+                        <option value="">Все</option>
+                        <option value="@WorkStatus.Working.ToString()">В работе</option>
+                        <option value="@WorkStatus.Paused.ToString()">Пауза</option>
+                    </select>
+                </label>
+
+                <div class="session-filter session-filter-action">
+                    <span>Сброс</span>
+                    <button class="btn ghost export-btn" type="button" @onclick="ResetFiltersAsync">
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                        <span>Сбросить</span>
+                    </button>
+                </div>
+            </section>
+        }
+
+        <section class="sessions-results">
+            <section class="sessions-grid">
+                @if (_loading)
+                {
+                    <div class="sessions-empty card">Загружаем активные сессии...</div>
+                }
+                else if (FilteredItems.Count == 0)
+                {
+                    <div class="sessions-empty card">По выбранным фильтрам активные сессии не найдены.</div>
+                }
+                else
+                {
+                    @foreach (var item in FilteredItems)
+                    {
+                        <article class="session-card card @GetCardClass(item.CurrentStatus)">
+                            <div class="session-top">
+                                <div>
+                                    <div class="session-title">@FormatUserShortName(item.UserName)</div>
+                                    <div class="session-id">Пользователь #@item.UserId</div>
+                                </div>
+                                <span class="session-status @GetStatusClass(item.CurrentStatus)">@GetStatusLabel(item.CurrentStatus)</span>
+                            </div>
+                            <div class="session-metrics">
+                                <div class="metric">
+                                    <span>Начало статуса</span>
+                                    <strong>@FormatDate(item.StatusStartedAtUtc)</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Начало сессии</span>
+                                    <strong>@FormatDate(item.SessionStartedAtUtc)</strong>
+                                </div>
+                                <div class="metric">
+                                    <span>Длительность</span>
+                                    <strong>@FormatDuration(item)</strong>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+            </section>
+        </section>
+    </section>
+</main>
+
+@code {
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int ProjectManagerRoleId = 6;
+
+    private readonly List<ActiveEmployeeSessionDto> _items = new();
+    private List<ProjectReadDto> _projects = new();
+    private List<TeamReadDto> _ownerTeams = new();
+    private bool _loading = true;
+    private bool _showOwnerFilters;
+    private string? _alert;
+    private CancellationTokenSource? _tickerCts;
+    private string _searchTerm = string.Empty;
+    private string? _date;
+    private string _statusFilter = string.Empty;
+    private string _selectedProjectId = string.Empty;
+    private string _selectedTeamId = string.Empty;
+    private bool _filtersCollapsed;
+    private int? _teamScopeId;
+    private string _subtitle = "Сотрудники, которые сейчас работают или поставили сессию на паузу по всей организации.";
+    private string _scopeLabel = "вся организация";
+
+    private List<ActiveEmployeeSessionDto> FilteredItems => _items
+        .Where(MatchesSearch)
+        .Where(MatchesDate)
+        .Where(MatchesStatus)
+        .OrderByDescending(x => x.StatusStartedAtUtc)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await InitializeScopeAsync())
+            return;
+
+        await LoadAsync();
+        StartTicker();
+    }
+
+    private async Task<bool> InitializeScopeAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == EmployeeRoleId)
+        {
+            var employeeProfile = await MembersVm.GetMyProfileAsync();
+            if (employeeProfile?.Team is not null)
+            {
+                _teamScopeId = employeeProfile.Team.TeamId;
+                _subtitle = "Активные сессии сотрудников вашей команды.";
+                _scopeLabel = $"команда #{employeeProfile.Team.TeamId}";
+                return true;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == OwnerRoleId)
+        {
+            _projects = await ProjectsVm.GetAllAsync();
+            _showOwnerFilters = true;
+            _subtitle = "Сотрудники, которые сейчас работают или поставили сессию на паузу по всей организации.";
+            _scopeLabel = "вся организация";
+            return true;
+        }
+
+        if (roleId == ProjectManagerRoleId)
+        {
+            _subtitle = "Ваша текущая активная рабочая сессия.";
+            _scopeLabel = "моя сессия";
+            return true;
+        }
+
+        var profile = await MembersVm.GetMyProfileAsync();
+        if (profile?.Team is null)
+        {
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == TeamLeadRoleId)
+        {
+            _teamScopeId = profile.Team.TeamId;
+            _subtitle = "Активные сессии сотрудников вашей команды.";
+            _scopeLabel = $"команда #{profile.Team.TeamId}";
+            return true;
+        }
+
+        _subtitle = "Сотрудники, которые сейчас работают или поставили сессию на паузу по всей организации.";
+        _scopeLabel = "вся организация";
+        return true;
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+        try
+        {
+            _items.Clear();
+            _items.AddRange(await LoadItemsByScopeAsync());
+        }
+        catch (Exception ex)
+        {
+            _alert = ex.Message;
+            _items.Clear();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<IReadOnlyList<ActiveEmployeeSessionDto>> LoadItemsByScopeAsync()
+    {
+        if (_teamScopeId.HasValue)
+            return await WorkSessionVm.GetTeamActiveSessionsAsync(_teamScopeId.Value);
+
+        if (int.TryParse(_selectedTeamId, out var selectedTeamId))
+            return await WorkSessionVm.GetTeamActiveSessionsAsync(selectedTeamId);
+
+        if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+            return await WorkSessionVm.GetProjectActiveSessionsAsync(selectedProjectId);
+
+        return await WorkSessionVm.GetActiveSessionsAsync();
+    }
+
+    private async Task OnProjectFilterChanged(ChangeEventArgs args)
+    {
+        _selectedProjectId = args.Value?.ToString() ?? string.Empty;
+        _selectedTeamId = string.Empty;
+        _ownerTeams = [];
+        _scopeLabel = "вся организация";
+
+        if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+        {
+            _ownerTeams = await TeamsVm.GetByProjectAsync(selectedProjectId);
+            _scopeLabel = $"проект #{selectedProjectId}";
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task OnTeamFilterChanged(ChangeEventArgs args)
+    {
+        _selectedTeamId = args.Value?.ToString() ?? string.Empty;
+        if (int.TryParse(_selectedTeamId, out var selectedTeamId))
+        {
+            _scopeLabel = $"команда #{selectedTeamId}";
+        }
+        else if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+        {
+            _scopeLabel = $"проект #{selectedProjectId}";
+        }
+        else
+        {
+            _scopeLabel = "вся организация";
+        }
+
+        await LoadAsync();
+    }
+
+    private void ToggleFilters()
+    {
+        _filtersCollapsed = !_filtersCollapsed;
+    }
+
+    private bool MatchesSearch(ActiveEmployeeSessionDto item)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+            return true;
+
+        var search = _searchTerm.Trim();
+        return item.UserName.Contains(search, StringComparison.OrdinalIgnoreCase)
+            || FormatUserShortName(item.UserName).Contains(search, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesDate(ActiveEmployeeSessionDto item)
+    {
+        if (!DateOnly.TryParse(_date, out var date))
+            return true;
+
+        return DateOnly.FromDateTime(item.StatusStartedAtUtc.ToLocalTime()) == date;
+    }
+
+    private bool MatchesStatus(ActiveEmployeeSessionDto item)
+    {
+        if (string.IsNullOrWhiteSpace(_statusFilter))
+            return true;
+
+        return string.Equals(((WorkStatus)item.CurrentStatus).ToString(), _statusFilter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnDateChanged(ChangeEventArgs args)
+    {
+        _date = args.Value?.ToString();
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        var shouldReload = _showOwnerFilters && (!string.IsNullOrEmpty(_selectedProjectId) || !string.IsNullOrEmpty(_selectedTeamId));
+
+        _searchTerm = string.Empty;
+        _date = null;
+        _statusFilter = string.Empty;
+        _selectedProjectId = string.Empty;
+        _selectedTeamId = string.Empty;
+        _ownerTeams = [];
+        _scopeLabel = _teamScopeId.HasValue ? $"команда #{_teamScopeId.Value}" : "вся организация";
+
+        if (shouldReload)
+            await LoadAsync();
+    }
+
+    private static string FormatUserShortName(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "—";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+            return "—";
+        if (parts.Length == 1)
+            return parts[0];
+
+        var surname = parts[0];
+        var initials = string.Concat(parts.Skip(1).Select(part => $"{char.ToUpperInvariant(part[0])}."));
+        return $"{surname} {initials}";
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "—";
+    }
+
+    private static string FormatDuration(ActiveEmployeeSessionDto item)
+    {
+        var displaySeconds = item.DurationSeconds;
+
+        if ((WorkStatus)item.CurrentStatus == WorkStatus.Working)
+        {
+            var elapsedSeconds = (int)(DateTime.UtcNow - item.StatusStartedAtUtc).TotalSeconds;
+            if (elapsedSeconds > 0)
+                displaySeconds += elapsedSeconds;
+        }
+
+        if (displaySeconds < 0)
+            displaySeconds = 0;
+
+        return TimeSpan.FromSeconds(displaySeconds).ToString(@"hh\:mm\:ss");
+    }
+
+    private static string GetStatusLabel(int status)
+    {
+        return (WorkStatus)status switch
+        {
+            WorkStatus.Working => "В работе",
+            WorkStatus.Paused => "Пауза",
+            WorkStatus.Completed => "Завершена",
+            _ => "Неактивна"
+        };
+    }
+
+    private static string GetStatusClass(int status)
+    {
+        return (WorkStatus)status switch
+        {
+            WorkStatus.Working => "ok",
+            WorkStatus.Paused => "warn",
+            WorkStatus.Completed => "info",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetCardClass(int status)
+    {
+        return (WorkStatus)status switch
+        {
+            WorkStatus.Working => "is-working",
+            WorkStatus.Paused => "is-paused",
+            _ => string.Empty
+        };
+    }
+
+    private void StartTicker()
+    {
+        StopTicker();
+        _tickerCts = new CancellationTokenSource();
+        _ = RunTickerAsync(_tickerCts.Token);
+    }
+
+    private void StopTicker()
+    {
+        _tickerCts?.Cancel();
+        _tickerCts?.Dispose();
+        _tickerCts = null;
+    }
+
+    private async Task RunTickerAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                if (_items.Any(item => (WorkStatus)item.CurrentStatus == WorkStatus.Working))
+                    await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        StopTicker();
+        return ValueTask.CompletedTask;
+    }
+}

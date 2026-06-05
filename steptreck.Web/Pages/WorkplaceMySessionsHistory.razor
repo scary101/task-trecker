@@ -1,0 +1,277 @@
+﻿@page "/workplace/sessions/my-history"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@using System.Text
+@using steptreck.Domain.DTOs.WorkSessionDTOs
+@using steptreck.Domain.Enums
+@inject steptreck.Web.ViewModel.WorkSessionViewModel WorkSessionVm
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<main class="page my-sessions-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>История моих сессий</h1>
+                <p class="section-subtitle">Личная лента завершенных рабочих сессий.</p>
+            </div>
+            <button class="btn primary" type="button" @onclick="ReloadAsync" disabled="@_loading">Обновить</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert err">@_alert</div>
+        }
+
+        <div class="toolbar-head">
+            <div class="history-summary">Найдено: @FilteredItems.Count</div>
+            <button class="filter-toggle" type="button" @onclick="ToggleFilters" aria-expanded="@(!_filtersCollapsed)">
+                <i class="bi @(_filtersCollapsed ? "bi-chevron-down" : "bi-chevron-up")" aria-hidden="true"></i>
+                <span>@(_filtersCollapsed ? "Показать фильтры" : "Скрыть фильтры")</span>
+            </button>
+        </div>
+
+        @if (!_filtersCollapsed)
+        {
+            <section class="history-toolbar card">
+                <label class="history-filter">
+                    <span>Дата от</span>
+                    <input value="@_dateFrom" @onchange="OnDateFromChanged" type="date" />
+                </label>
+
+                <label class="history-filter">
+                    <span>Дата до</span>
+                    <input value="@_dateTo" @onchange="OnDateToChanged" type="date" />
+                </label>
+
+                <div class="history-filter history-filter-action">
+                    <span>Выгрузка</span>
+                    <button class="btn ghost export-btn" type="button" @onclick="ExportAsync" disabled="@(!FilteredItems.Any())">
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                        <span>В Excel</span>
+                    </button>
+                </div>
+
+                <div class="history-filter history-filter-action">
+                    <span>Сброс</span>
+                    <button class="btn ghost export-btn" type="button" @onclick="ResetFilters">
+                        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                        <span>Сбросить</span>
+                    </button>
+                </div>
+            </section>
+        }
+
+        <section class="history-results">
+            <section class="my-history-timeline">
+                @if (_loading)
+                {
+                    <div class="my-history-empty card">Загружаем ваши сессии...</div>
+                }
+                else if (FilteredItems.Count == 0)
+                {
+                    <div class="my-history-empty card">По выбранным фильтрам сессии не найдены.</div>
+                }
+                else
+                {
+                    @foreach (var item in FilteredItems)
+                    {
+                        <article class="my-history-card card">
+                            <div class="timeline-pin @GetStatusClass(item.Status)"></div>
+                            <div class="my-history-body">
+                                <div class="my-history-head">
+                                    <div>
+                                        <div class="my-history-title">@FormatUserShortName(item.UserName)</div>
+                                        <div class="my-history-subtitle">Сессия #@item.SessionId</div>
+                                    </div>
+                                    <span class="my-history-status @GetStatusClass(item.Status)">@GetStatusLabel(item.Status)</span>
+                                </div>
+                                <div class="my-history-stats">
+                                    <div class="my-history-stat">
+                                        <span>Старт</span>
+                                        <strong>@FormatDate(item.StartedAtUtc)</strong>
+                                    </div>
+                                    <div class="my-history-stat">
+                                        <span>Финиш</span>
+                                        <strong>@FormatDate(item.EndedAtUtc)</strong>
+                                    </div>
+                                    <div class="my-history-stat">
+                                        <span>Время</span>
+                                        <strong>@FormatDuration(item.DurationSeconds)</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+            </section>
+        </section>
+    </section>
+</main>
+
+@code {
+    private const int AdminRoleId = 5;
+
+    private List<WorkSessionHistoryDto> _items = new();
+    private bool _loading = true;
+    private string? _alert;
+    private string? _dateFrom;
+    private string? _dateTo;
+    private bool _filtersCollapsed;
+
+    private List<WorkSessionHistoryDto> FilteredItems => _items
+        .Where(MatchesDateFrom)
+        .Where(MatchesDateTo)
+        .OrderByDescending(x => x.StartedAtUtc)
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (await RoleStore.GetRoleIdAsync() == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+        try
+        {
+            _items = (await WorkSessionVm.GetMySessionHistoryAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _alert = ex.Message;
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ToggleFilters()
+    {
+        _filtersCollapsed = !_filtersCollapsed;
+    }
+
+    private bool MatchesDateFrom(WorkSessionHistoryDto item)
+    {
+        if (!DateOnly.TryParse(_dateFrom, out var from))
+            return true;
+
+        return DateOnly.FromDateTime(item.StartedAtUtc.ToLocalTime()) >= from;
+    }
+
+    private bool MatchesDateTo(WorkSessionHistoryDto item)
+    {
+        if (!DateOnly.TryParse(_dateTo, out var to))
+            return true;
+
+        return DateOnly.FromDateTime(item.StartedAtUtc.ToLocalTime()) <= to;
+    }
+
+    private void OnDateFromChanged(ChangeEventArgs args)
+    {
+        _dateFrom = args.Value?.ToString();
+    }
+
+    private void OnDateToChanged(ChangeEventArgs args)
+    {
+        _dateTo = args.Value?.ToString();
+    }
+
+    private void ResetFilters()
+    {
+        _dateFrom = null;
+        _dateTo = null;
+    }
+
+    private async Task ExportAsync()
+    {
+        var rows = new StringBuilder();
+        rows.AppendLine("\uFEFFПользователь,Статус,Старт,Завершение,Длительность");
+
+        foreach (var item in FilteredItems)
+        {
+            rows.Append(EscapeCsv(FormatUserShortName(item.UserName))).Append(',')
+                .Append(EscapeCsv(GetStatusLabel(item.Status))).Append(',')
+                .Append(EscapeCsv(FormatDate(item.StartedAtUtc))).Append(',')
+                .Append(EscapeCsv(FormatDate(item.EndedAtUtc))).Append(',')
+                .Append(EscapeCsv(FormatDuration(item.DurationSeconds))).AppendLine();
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(rows.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"my-sessions-history_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "text/csv;charset=utf-8", base64);
+    }
+
+    private static string EscapeCsv(string? value)
+    {
+        var text = value ?? string.Empty;
+        if (text.Contains('"'))
+            text = text.Replace("\"", "\"\"");
+
+        return $"\"{text}\"";
+    }
+
+    private static string FormatUserShortName(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "—";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+            return "—";
+        if (parts.Length == 1)
+            return parts[0];
+
+        var surname = parts[0];
+        var initials = string.Concat(parts.Skip(1).Select(part => $"{char.ToUpperInvariant(part[0])}."));
+        return $"{surname} {initials}";
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm") : "—";
+    }
+
+    private static string FormatDuration(int seconds)
+    {
+        var duration = TimeSpan.FromSeconds(Math.Max(0, seconds));
+        return $"{(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+    }
+
+    private static string GetStatusLabel(int status)
+    {
+        return (WorkStatus)status switch
+        {
+            WorkStatus.Completed => "Завершена",
+            WorkStatus.Paused => "Пауза",
+            WorkStatus.Working => "В работе",
+            _ => "Неактивна"
+        };
+    }
+
+    private static string GetStatusClass(int status)
+    {
+        return (WorkStatus)status switch
+        {
+            WorkStatus.Completed => "ok",
+            WorkStatus.Paused => "warn",
+            WorkStatus.Working => "info",
+            _ => "neutral"
+        };
+    }
+}

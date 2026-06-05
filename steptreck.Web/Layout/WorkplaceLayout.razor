@@ -1,0 +1,1233 @@
+﻿@inherits LayoutComponentBase
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.NotificationsViewModel NotificationsVm
+@inject steptreck.Web.ViewModel.AuthViewModel AuthVm
+@inject steptreck.Web.ViewModel.SubscriptionsViewModel SubsVm
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+@inject steptreck.Web.Services.ChatClient ChatClient
+@inject steptreck.Web.ViewModel.WorkSessionViewModel WorkSessionVm
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IConfiguration Config
+@using System.Text
+@using System.Text.Json
+@implements IAsyncDisposable
+
+@if (_ready)
+{
+    @if (_hideWorkplaceChrome)
+    {
+        <div class="workplace-frame no-sidebar">
+            <main class="work-content work-content--solo">
+                @Body
+            </main>
+        </div>
+    }
+    else
+    {
+        <div class="workplace-frame @( _navCollapsed ? "is-collapsed" : "" )">
+            <aside class="work-sidebar" aria-label="Навигация рабочего пространства">
+                <button class="sidebar-toggle" type="button" @onclick="ToggleSidebar" aria-label="@(_navCollapsed ? "Развернуть меню" : "Свернуть меню")" aria-expanded="@(!_navCollapsed)">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+
+                <a class="sidebar-brand" href="/" aria-label="StepTreck">
+                    <span class="sidebar-brand-logo">
+                        <img src="icon.png" alt="StepTreck" />
+                    </span>
+                    <span class="sidebar-brand-text">
+                        <span class="sidebar-brand-title">
+                            <span class="sidebar-brand-step">Step</span><span class="sidebar-brand-treck">Treck</span>
+                        </span>
+                    </span>
+                </a>
+
+                <div class="user-card">
+                    <a class="profile-link" href="/profile" aria-label="Профиль">
+                        <span class="auth-avatar">
+                            @if (!string.IsNullOrWhiteSpace(_avatarUrl))
+                            {
+                                <img src="@_avatarUrl" alt="Avatar" />
+                            }
+                            else
+                            {
+                                <span>@_initials</span>
+                            }
+                        </span>
+                        <span class="user-meta">
+                            <span class="user-role">@RoleLabel</span>
+                            <span class="user-name">@_displayName</span>
+                        </span>
+                    </a>
+
+                    <div class="notif-wrap">
+                        <button class="notif-btn" type="button" @onclick="ToggleNotifications" aria-label="Уведомления">
+                            <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                            @if (_unreadCount > 0)
+                            {
+                                <span class="notif-badge">@_unreadCount</span>
+                            }
+                        </button>
+                        @if (_notificationsOpen)
+                        {
+                            <button class="notif-backdrop" type="button" @onclick="CloseNotifications" aria-label="Закрыть уведомления"></button>
+                            <div class="notif-panel card">
+                                <div class="notif-head">
+                                    <span>Уведомления</span>
+                                    <a class="muted-link" href="/workplace/notifications">Открыть журнал</a>
+                                </div>
+                                @if (_notifications.Count == 0)
+                                {
+                                    <div class="notif-empty">Пока нет уведомлений.</div>
+                                }
+                                else
+                                {
+                                    <div class="notif-list">
+                                        @foreach (var n in _notifications)
+                                        {
+                                            <button class="notif-item @(n.IsRead ? "" : "unread")" @onclick="() => MarkReadAsync(n)">
+                                                <div class="notif-text">@n.Text</div>
+                                                <div class="notif-date">@FormatDate(n.CreatedAt)</div>
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <nav class="work-nav">
+
+                    @if (_isAdmin)
+                    {
+                        <a href="/workplace/metrics" class="nav-link @(GetNavClass("metrics"))">
+                            <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                            <span class="nav-text">Метрики</span>
+                        </a>
+                        <a href="/workplace/data" class="nav-link @(GetNavClass("data"))">
+                            <i class="bi bi-database" aria-hidden="true"></i>
+                            <span class="nav-text">Данные</span>
+                        </a>
+                        <a href="/workplace/audit" class="nav-link @(GetNavClass("audit"))">
+                            <i class="bi bi-shield-check" aria-hidden="true"></i>
+                            <span class="nav-text">Аудит</span>
+                        </a>
+                    }
+                    else if (_isTeamLead && _teamScopedTeamId.HasValue && _teamScopedProjectId.HasValue)
+                    {
+                        <a href="@TeamInfoUrl" class="nav-link @(GetTeamNavClass("info"))">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            <span class="nav-text">Команда</span>
+                        </a>
+                        <a href="@TeamDashboardUrl" class="nav-link @(GetTeamNavClass("dashboard"))">
+                            <i class="bi bi-speedometer" aria-hidden="true"></i>
+                            <span class="nav-text">Дашборд</span>
+                        </a>
+                        <a href="@TeamMembersUrl" class="nav-link @(GetTeamNavClass("members"))">
+                            <i class="bi bi-person-lines-fill" aria-hidden="true"></i>
+                            <span class="nav-text">Участники</span>
+                        </a>
+                        <a href="@TeamStatsUrl" class="nav-link @(GetTeamNavClass("stats"))">
+                            <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                            <span class="nav-text">Статистика</span>
+                        </a>
+                        <a href="@TeamCalendarUrl" class="nav-link @(GetTeamNavClass("calendar"))">
+                            <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                            <span class="nav-text">Календарь</span>
+                        </a>
+                        <a href="@TeamFilesUrl" class="nav-link @(GetTeamNavClass("files"))">
+                            <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                            <span class="nav-text">Файлы команды</span>
+                        </a>
+                        @TasksNavSection
+                        <a href="@TeamChatUrl" class="nav-link @(GetTeamNavClass("chat"))">
+                            <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                            <span class="nav-text">Чат команды</span>
+                        </a>
+                        <a href="@ProjectFilesUrl" class="nav-link @(GetTeamNavClass("project-files"))">
+                            <i class="bi bi-archive" aria-hidden="true"></i>
+                            <span class="nav-text">Файлы проекта</span>
+                        </a>
+                        @SessionsNavSection
+                        @ChartsNavSection
+                    }
+                    else if (_isEmployee)
+                    {
+                        @TasksNavSection
+                        @if (_teamScopedTeamId.HasValue && _teamScopedProjectId.HasValue)
+                        {
+                            <a href="@TeamCalendarUrl" class="nav-link @(GetTeamNavClass("calendar"))">
+                                <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                                <span class="nav-text">Календарь</span>
+                            </a>
+                            <a href="@TeamChatUrl" class="nav-link @(GetTeamNavClass("chat"))">
+                                <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                                <span class="nav-text">Чат команды</span>
+                            </a>
+                            <a href="@TeamFilesUrl" class="nav-link @(GetTeamNavClass("files"))">
+                                <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                                <span class="nav-text">Файлы команды</span>
+                            </a>
+                            @SessionsNavSection
+                        }
+                    }
+                    else if (_isProjectManager)
+                    {
+                        @SessionsNavSection
+                    }
+                    else
+                    {
+                        <a href="/workplace/owner-dashboard" class="nav-link @(GetNavClass("owner-dashboard"))">
+                            <i class="bi bi-command" aria-hidden="true"></i>
+                            <span class="nav-text">Сводка руководителя</span>
+                        </a>
+                        <a href="/workplace/chats" class="nav-link @(GetNavClass("chats"))">
+                            <i class="bi bi-chat-square-text" aria-hidden="true"></i>
+                            <span class="nav-text">Чаты команд</span>
+                        </a>
+                        <a href="/workplace/projects" class="nav-link @(GetNavClass("projects"))">
+                            <i class="bi bi-grid" aria-hidden="true"></i>
+                            <span class="nav-text">Проекты</span>
+                        </a>
+                        <a href="/workplace/members" class="nav-link @(GetNavClass("members"))">
+                            <i class="bi bi-people" aria-hidden="true"></i>
+                            <span class="nav-text">Участники организации</span>
+                        </a>
+                        @TasksNavSection
+                        <a href="/workplace/subscription/manage" class="nav-link @(GetNavClass("subscription-manage"))">
+                            <i class="bi bi-credit-card" aria-hidden="true"></i>
+                            <span class="nav-text">Подписка</span>
+                        </a>
+                        @SessionsNavSection
+                        @ChartsNavSection
+                    }
+                </nav>
+                <div class="sidebar-actions" aria-label="Действия">
+                    <button class="theme-switch @(_theme == "dark" ? "is-dark" : null)" type="button" @onclick="ToggleTheme" aria-label="Переключить тему" aria-pressed="@(_theme == "dark")">
+                        <span class="theme-switch-track" aria-hidden="true">
+                            <span class="theme-switch-thumb">
+                                <i class="bi @(_theme == "dark" ? "bi-moon-stars-fill" : "bi-sun-fill")"></i>
+                            </span>
+                        </span>
+                        <span class="nav-text">Тема</span>
+                    </button>
+                    <button class="theme-switch timer-switch @(_stopwatchVisible ? "is-on" : null)" type="button" @onclick="ToggleStopwatchVisibility" aria-label="Показать или скрыть секундомер" aria-pressed="@_stopwatchVisible">
+                        <span class="theme-switch-track" aria-hidden="true">
+                            <span class="theme-switch-thumb">
+                                <i class="bi bi-stopwatch-fill"></i>
+                            </span>
+                        </span>
+                        <span class="nav-text">Секундомер</span>
+                    </button>
+                    <button class="sidebar-action logout" type="button" @onclick="LogoutAsync" aria-label="Выйти">
+                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                        <span class="nav-text">Выйти</span>
+                    </button>
+                </div>
+            </aside>
+
+            <main class="work-content">
+                @Body
+            </main>
+        </div>
+    }
+
+    @if (!_hideWorkplaceChrome && _stopwatchVisible)
+    {
+        <section class="floating-stopwatch @(_stopwatchRunning ? "is-running" : "") @(_stopwatchCollapsed ? "is-compact" : "")" aria-label="Секундомер">
+            <button class="stopwatch-collapse" type="button" @onclick="ToggleStopwatchCollapsed" aria-label="@(_stopwatchCollapsed ? "Развернуть секундомер" : "Свернуть секундомер")">
+                <i class="bi @(_stopwatchCollapsed ? "bi-arrows-angle-expand" : "bi-arrows-angle-contract")" aria-hidden="true"></i>
+            </button>
+            <div class="stopwatch-face">
+                <span class="stopwatch-time">@StopwatchText</span>
+            </div>
+            @if (!_stopwatchCollapsed)
+            {
+                <div class="stopwatch-controls">
+                    @if (!_stopwatchRunning)
+                    {
+                        <button class="stopwatch-btn start" type="button" @onclick="StartStopwatchAsync" aria-label="@(_stopwatchElapsed > TimeSpan.Zero ? "Продолжить секундомер" : "Запустить секундомер")">
+                            <i class="bi bi-play-fill" aria-hidden="true"></i>
+                            <span>@(_stopwatchElapsed > TimeSpan.Zero ? "Продолжить" : "Старт")</span>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="stopwatch-btn pause" type="button" @onclick="PauseStopwatchAsync" aria-label="Приостановить секундомер">
+                            <i class="bi bi-pause-fill" aria-hidden="true"></i>
+                            <span>Пауза</span>
+                        </button>
+                        <button class="stopwatch-btn stop" type="button" @onclick="StopStopwatchAsync" aria-label="Остановить секундомер">
+                            <i class="bi bi-stop-fill" aria-hidden="true"></i>
+                            <span>Стоп</span>
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+    }
+
+    @if (!_hideWorkplaceChrome)
+    {
+        <div class="toast-stack">
+            @foreach (var toast in _toasts)
+            {
+                <div class="toast @(toast.IsClosing ? "closing" : "")">
+                    <button class="toast-close" type="button" @onclick="() => DismissToastAsync(toast)" aria-label="Закрыть уведомление">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                    @if (!string.IsNullOrWhiteSpace(toast.Title))
+                    {
+                        <div class="toast-title">@toast.Title</div>
+                    }
+                    <div class="toast-text">@toast.Text</div>
+                    @if (!string.IsNullOrWhiteSpace(toast.LinkUrl) && !string.IsNullOrWhiteSpace(toast.LinkText))
+                    {
+                        <a class="toast-link" href="@toast.LinkUrl" target="_blank" rel="noopener noreferrer">@toast.LinkText</a>
+                    }
+                    <div class="toast-date">@FormatDate(toast.CreatedAt)</div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool _ready;
+    private bool _hasActiveSubscription = true;
+    private bool _hideWorkplaceChrome;
+    private bool _isSubscriptionManageRoute;
+    private string _initials = "ST";
+    private string? _avatarUrl;
+    private int _unreadCount;
+    private bool _notificationsOpen;
+    private bool _isAdmin;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private bool _isProjectManager;
+    private bool _navCollapsed;
+    private bool _tasksExpanded;
+    private bool _sessionsExpanded;
+    private bool _chartsExpanded;
+    private string _theme = "light";
+    private TimeSpan _stopwatchElapsed = TimeSpan.Zero;
+    private TimeSpan _stopwatchBaseElapsed = TimeSpan.Zero;
+    private DateTimeOffset? _stopwatchStartedAt;
+    private bool _stopwatchRunning;
+    private bool _stopwatchVisible = true;
+    private bool _stopwatchCollapsed;
+    private CancellationTokenSource? _stopwatchCts;
+    private int _lastStopwatchReminderMinute;
+    private string _displayName = "StepTreck";
+    private int? _teamScopedTeamId;
+    private int? _teamScopedProjectId;
+    private readonly List<steptreck.Domain.DTOs.NotificationDto> _notifications = new();
+    private readonly List<ToastItem> _toasts = new();
+    private IDisposable? _notifySub;
+    private const int AdminRoleId = 5;
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int ProjectManagerRoleId = 6;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    private sealed class StopwatchCookieState
+    {
+        public long BaseElapsedSeconds { get; set; }
+        public long? StartedAtUnixSeconds { get; set; }
+        public bool IsRunning { get; set; }
+        public bool IsVisible { get; set; } = true;
+        public bool IsCollapsed { get; set; }
+        public int LastReminderMinute { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+
+        var token = await JwtService.GetTokenAsync();
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            _ready = true;
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        var currentPath = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        _isSubscriptionManageRoute = currentPath.StartsWith("workplace/subscription/manage", StringComparison.OrdinalIgnoreCase);
+
+        int? roleId = await RoleAccess.GetCurrentRoleIdAsync();
+        SetRoleFlags(roleId);
+
+        if (!await RoleAccess.CanAccessWorkplacePathAsync(currentPath))
+        {
+            _ready = true;
+            Nav.NavigateTo(RoleAccess.GetDefaultWorkplacePath(roleId), replace: true);
+            return;
+        }
+
+        if (currentPath.StartsWith("workplace", StringComparison.OrdinalIgnoreCase))
+        {
+            _hasActiveSubscription = await SubsVm.HasActiveAsync();
+            if (!_hasActiveSubscription)
+            {
+                _hideWorkplaceChrome = _isSubscriptionManageRoute;
+                _ready = true;
+
+                if (!_isSubscriptionManageRoute && _isOwner)
+                    Nav.NavigateTo("/workplace/subscription/manage", forceLoad: true);
+
+                return;
+            }
+        }
+
+        try
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile is not null)
+            {
+                if (RedirectEmployeeWithoutTeam(profile))
+                    return;
+
+                ApplyProfile(profile);
+            }
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            await LoadNotificationsAsync();
+            await ChatClient.StartAsync();
+            _notifySub = ChatClient.OnNotify(OnNotifyReceived);
+        }
+        catch
+        {
+            // Ignore chat connection issues to avoid blocking admin access.
+        }
+
+        _ready = true;
+        _tasksExpanded = IsTasksSectionActive();
+        _sessionsExpanded = IsSessionSectionActive();
+        _chartsExpanded = IsChartsSectionActive();
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await InvokeAsync(async () =>
+        {
+            var path = Nav.ToBaseRelativePath(e.Location).Trim('/');
+            if (!path.StartsWith("workplace", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var roleId = await RoleAccess.GetCurrentRoleIdAsync();
+            SetRoleFlags(roleId);
+            _isSubscriptionManageRoute = path.StartsWith("workplace/subscription/manage", StringComparison.OrdinalIgnoreCase);
+            _hideWorkplaceChrome = _isSubscriptionManageRoute && !_hasActiveSubscription;
+
+            if (_isEmployee)
+            {
+                var profile = await MembersVm.GetMyProfileAsync();
+                if (RedirectEmployeeWithoutTeam(profile))
+                    return;
+
+                if (profile is not null)
+                    ApplyProfile(profile);
+            }
+
+            if (!await RoleAccess.CanAccessWorkplacePathAsync(path))
+            {
+                Nav.NavigateTo(RoleAccess.GetDefaultWorkplacePath(roleId), replace: true);
+                return;
+            }
+
+            _tasksExpanded = IsTasksSectionActive();
+            _sessionsExpanded = IsSessionSectionActive();
+            _chartsExpanded = IsChartsSectionActive();
+            StateHasChanged();
+        });
+    }
+
+    private void SetRoleFlags(int? roleId)
+    {
+        _isAdmin = roleId == AdminRoleId;
+        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        _isProjectManager = roleId == ProjectManagerRoleId;
+    }
+
+    private void ApplyProfile(steptreck.Domain.DTOs.MemberDTOs.MemberProfileDto profile)
+    {
+        if (!string.IsNullOrWhiteSpace(profile.FullName))
+        {
+            _displayName = ToFirstAndLastName(profile.FullName);
+            _initials = BuildInitials(profile.FullName);
+        }
+
+        if (!string.IsNullOrWhiteSpace(profile.AvatarUrl))
+            _avatarUrl = BuildAvatarUrl(profile.AvatarUrl);
+
+        if (_isTeamLead || _isEmployee)
+        {
+            _teamScopedTeamId = profile.Team?.TeamId;
+            _teamScopedProjectId = profile.Team?.ProjectId;
+        }
+    }
+
+    private bool RedirectEmployeeWithoutTeam(steptreck.Domain.DTOs.MemberDTOs.MemberProfileDto? profile)
+    {
+        if (!_isEmployee || profile?.Team is not null)
+            return false;
+
+        _ready = true;
+        Nav.NavigateTo("/profile", replace: true);
+        return true;
+    }
+
+    private string RoleLabel =>
+        _isAdmin ? "администратор" :
+        _isOwner ? "Руководитель" :
+        _isTeamLead ? "ТимЛид" :
+        _isEmployee ? "Сотрудник" :
+        _isProjectManager ? "Руководитель проекта" :
+        "Workplace";
+
+    private string StopwatchText
+    {
+        get
+        {
+            var elapsed = _stopwatchElapsed;
+            return $"{(int)elapsed.TotalHours:00}:{elapsed.Minutes:00}:{elapsed.Seconds:00}";
+        }
+    }
+
+    private void ToggleSidebar()
+    {
+        _navCollapsed = !_navCollapsed;
+
+        if (_navCollapsed)
+        {
+            _tasksExpanded = false;
+            _sessionsExpanded = false;
+            _chartsExpanded = false;
+        }
+    }
+
+    private void ToggleTasksMenu()
+    {
+        if (_navCollapsed)
+        {
+            _navCollapsed = false;
+            _tasksExpanded = true;
+            return;
+        }
+
+        _tasksExpanded = !_tasksExpanded;
+    }
+
+    private void ToggleSessionsMenu()
+    {
+        if (_navCollapsed)
+        {
+            _navCollapsed = false;
+            _sessionsExpanded = true;
+            return;
+        }
+
+        _sessionsExpanded = !_sessionsExpanded;
+    }
+
+    private void ToggleChartsMenu()
+    {
+        if (_navCollapsed)
+        {
+            _navCollapsed = false;
+            _chartsExpanded = true;
+            return;
+        }
+
+        _chartsExpanded = !_chartsExpanded;
+    }
+
+    private async Task ToggleTheme()
+    {
+        try
+        {
+            _theme = await JS.InvokeAsync<string>("steptreckTheme.toggle");
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task StartStopwatchAsync()
+    {
+        if (_stopwatchRunning)
+            return;
+
+        var result = _stopwatchElapsed > TimeSpan.Zero
+            ? await WorkSessionVm.ToggleSessionAsync()
+            : await WorkSessionVm.StartSessionAsync();
+
+        if (!result.Success)
+            return;
+
+        _stopwatchBaseElapsed = _stopwatchElapsed;
+        _stopwatchStartedAt = DateTimeOffset.UtcNow;
+        _stopwatchRunning = true;
+        _lastStopwatchReminderMinute = Math.Max(0, (int)Math.Floor(_stopwatchElapsed.TotalMinutes / 45) * 45);
+        StartStopwatchTicker();
+        await PersistStopwatchStateAsync();
+    }
+
+    private async Task PauseStopwatchAsync()
+    {
+        if (!_stopwatchRunning)
+            return;
+
+        var result = await WorkSessionVm.ToggleSessionAsync();
+        if (!result.Success)
+            return;
+
+        UpdateStopwatchElapsed();
+        _stopwatchBaseElapsed = _stopwatchElapsed;
+        _stopwatchStartedAt = null;
+        _stopwatchRunning = false;
+        StopStopwatchTicker();
+        await PersistStopwatchStateAsync();
+    }
+
+    private async Task StopStopwatchAsync()
+    {
+        var result = await WorkSessionVm.StopSessionAsync();
+        if (!result.Success)
+        {
+            if (IsNoActiveSessionError(result.Error))
+                await ResetStopwatchAsync();
+
+            return;
+        }
+
+        await ResetStopwatchAsync();
+    }
+
+    private async Task ResetStopwatchAsync()
+    {
+        _stopwatchElapsed = TimeSpan.Zero;
+        _stopwatchBaseElapsed = TimeSpan.Zero;
+        _stopwatchStartedAt = null;
+        _stopwatchRunning = false;
+        _lastStopwatchReminderMinute = 0;
+        StopStopwatchTicker();
+        await PersistStopwatchStateAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static bool IsNoActiveSessionError(string? error)
+        => !string.IsNullOrWhiteSpace(error) &&
+           error.Contains("Ошибка остановки сессии", StringComparison.OrdinalIgnoreCase);
+
+    private async Task ToggleStopwatchVisibility()
+    {
+        _stopwatchVisible = !_stopwatchVisible;
+        await PersistStopwatchStateAsync();
+    }
+
+    private async Task ToggleStopwatchCollapsed()
+    {
+        _stopwatchCollapsed = !_stopwatchCollapsed;
+        await PersistStopwatchStateAsync();
+    }
+
+    private void UpdateStopwatchElapsed()
+    {
+        if (_stopwatchRunning && _stopwatchStartedAt.HasValue)
+            _stopwatchElapsed = _stopwatchBaseElapsed + (DateTimeOffset.UtcNow - _stopwatchStartedAt.Value);
+    }
+
+    private void StartStopwatchTicker()
+    {
+        StopStopwatchTicker();
+        _stopwatchCts = new CancellationTokenSource();
+        _ = RunStopwatchTickerAsync(_stopwatchCts.Token);
+    }
+
+    private void StopStopwatchTicker()
+    {
+        _stopwatchCts?.Cancel();
+        _stopwatchCts?.Dispose();
+        _stopwatchCts = null;
+    }
+
+    private async Task RunStopwatchTickerAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                UpdateStopwatchElapsed();
+                await CheckStopwatchReminderAsync();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task PersistStopwatchStateAsync()
+    {
+        try
+        {
+            UpdateStopwatchElapsed();
+
+            var state = new StopwatchCookieState
+            {
+                BaseElapsedSeconds = (long)Math.Floor(_stopwatchBaseElapsed.TotalSeconds),
+                StartedAtUnixSeconds = _stopwatchStartedAt?.ToUnixTimeSeconds(),
+                IsRunning = _stopwatchRunning,
+                IsVisible = _stopwatchVisible,
+                IsCollapsed = _stopwatchCollapsed,
+                LastReminderMinute = _lastStopwatchReminderMinute
+            };
+
+            await JS.InvokeVoidAsync("steptreckWorkplaceSidebar.saveStopwatchState", state);
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task RestoreStopwatchStateAsync()
+    {
+        try
+        {
+            var state = await JS.InvokeAsync<StopwatchCookieState?>("steptreckWorkplaceSidebar.loadStopwatchState");
+            if (state is null)
+                return;
+
+            _stopwatchBaseElapsed = TimeSpan.FromSeconds(Math.Max(0, state.BaseElapsedSeconds));
+            _stopwatchStartedAt = state.StartedAtUnixSeconds.HasValue
+                ? DateTimeOffset.FromUnixTimeSeconds(state.StartedAtUnixSeconds.Value)
+                : null;
+            _stopwatchRunning = state.IsRunning && _stopwatchStartedAt.HasValue;
+            _stopwatchVisible = state.IsVisible;
+            _stopwatchCollapsed = state.IsCollapsed;
+            _lastStopwatchReminderMinute = Math.Max(0, state.LastReminderMinute);
+
+            if (_stopwatchRunning)
+            {
+                UpdateStopwatchElapsed();
+                StartStopwatchTicker();
+            }
+            else
+            {
+                _stopwatchElapsed = _stopwatchBaseElapsed;
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthVm.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    private static string ToFirstAndLastName(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "StepTreck";
+        if (parts.Length == 1)
+            return parts[0];
+        return $"{parts[0]} {parts[1]}";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _theme = await JS.InvokeAsync<string>("steptreckTheme.init");
+                await JS.InvokeVoidAsync("steptreckWorkplaceSidebar.init");
+                await RestoreStopwatchStateAsync();
+                StateHasChanged();
+            }
+            catch
+            {
+            }
+        }
+    }
+
+
+    private async Task LoadNotificationsAsync()
+    {
+        _notifications.Clear();
+        var latest = await NotificationsVm.GetLatestAsync(20);
+        _notifications.AddRange(latest);
+        _unreadCount = await NotificationsVm.GetUnreadCountAsync();
+    }
+
+    private void OnNotifyReceived(steptreck.Domain.DTOs.NotificationDto dto)
+    {
+        _notifications.Insert(0, dto);
+        _unreadCount++;
+        AddToast(dto);
+        JS.InvokeVoidAsync("steptreckNotifySound.play");
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task MarkReadAsync(steptreck.Domain.DTOs.NotificationDto dto)
+    {
+        if (!dto.IsRead)
+        {
+            var ok = await NotificationsVm.MarkReadAsync(dto.Id);
+            if (ok)
+            {
+                dto.IsRead = true;
+                if (_unreadCount > 0)
+                    _unreadCount--;
+            }
+        }
+    }
+
+    private async Task ToggleNotifications()
+    {
+        _notificationsOpen = !_notificationsOpen;
+        if (_notificationsOpen)
+            await LoadNotificationsAsync();
+    }
+
+    private void CloseNotifications()
+    {
+        _notificationsOpen = false;
+    }
+
+    private void AddToast(steptreck.Domain.DTOs.NotificationDto dto)
+    {
+        var toast = new ToastItem
+        {
+            Id = Guid.NewGuid(),
+            Text = dto.Text,
+            CreatedAt = dto.CreatedAt == default ? DateTime.Now : dto.CreatedAt
+        };
+
+        _toasts.Insert(0, toast);
+        _ = RemoveToastAsync(toast);
+    }
+
+    private async Task CheckStopwatchReminderAsync()
+    {
+        if (!_stopwatchRunning)
+            return;
+
+        var elapsedMinutes = (int)Math.Floor(_stopwatchElapsed.TotalMinutes);
+        var reminderMinute = (elapsedMinutes / 45) * 45;
+        if (reminderMinute < 45 || reminderMinute <= _lastStopwatchReminderMinute)
+            return;
+
+        _lastStopwatchReminderMinute = reminderMinute;
+
+        var toast = new ToastItem
+        {
+            Id = Guid.NewGuid(),
+            Title = "⏰ Напоминание",
+            Text = $"Ты уже {reminderMinute} минут за работой 💻 — самое время немного размяться! Пара минут движения поможет снять напряжение и вернуться к работе с новыми силами ✨",
+            LinkUrl = "/doc/wormap.pdf",
+            LinkText = "Скачать 👍",
+            CreatedAt = DateTime.Now
+        };
+
+        _toasts.Insert(0, toast);
+        await JS.InvokeVoidAsync("steptreckNotifySound.play");
+        _ = RemoveToastAsync(toast);
+        await PersistStopwatchStateAsync();
+    }
+
+    private async Task RemoveToastAsync(ToastItem toast)
+    {
+        await Task.Delay(10000);
+        if (toast.IsClosing)
+            return;
+
+        toast.IsClosing = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(600);
+        _toasts.Remove(toast);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DismissToastAsync(ToastItem toast)
+    {
+        if (toast.IsClosing)
+            return;
+
+        toast.IsClosing = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(220);
+        _toasts.Remove(toast);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatDate(DateTime value)
+    {
+        return value.ToString("dd.MM HH:mm");
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private string? BuildAvatarUrl(string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private string GetNavClass(string section)
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        if (path.StartsWith("workplace", StringComparison.OrdinalIgnoreCase))
+        {
+            if (section == "projects" && path.Contains("projects", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "members" && path.Contains("members", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "tasks" && path.StartsWith("workplace/tasks", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "metrics" && path.Contains("metrics", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "data" && path.Contains("data", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "audit" && path.Contains("audit", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "sessions-active" && path.Contains("sessions/active", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "sessions-history" && path.Contains("sessions/history", StringComparison.OrdinalIgnoreCase) &&
+                !path.Contains("sessions/my-history", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "sessions-my-history" && path.Contains("sessions/my-history", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "charts-work-time" && path.Contains("charts/work-time-statistics", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "notifications" && path.Contains("notifications", StringComparison.OrdinalIgnoreCase))
+                return "active";
+            if (section == "subscription-manage" && path.Contains("subscription/manage", StringComparison.OrdinalIgnoreCase))
+                return "active";
+        }
+
+        return "";
+    }
+
+    private bool IsSessionSectionActive()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        return path.Contains("workplace/sessions", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsTasksSectionActive()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        if (path.StartsWith("workplace/tasks", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return _teamScopedProjectId.HasValue &&
+               _teamScopedTeamId.HasValue &&
+               path.Contains($"workplace/projects/{_teamScopedProjectId}/teams/{_teamScopedTeamId}/tasks", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool IsChartsSectionActive()
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        return path.Contains("workplace/charts", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool ShowTasksNavSection =>
+        !_isAdmin && !_isOwner;
+
+    private string TeamTaskHistoryUrl => $"{TeamBasePath}/tasks/history";
+    private string MyTaskHistoryUrl => "/workplace/tasks/my-history";
+
+    private RenderFragment TasksNavSection => @<div>
+        @if (ShowTasksNavSection)
+        {
+            <div class="nav-group @(IsTasksSectionActive() ? "is-active" : "") @( _tasksExpanded ? "is-open" : "" )">
+                <button class="nav-group-title" type="button" @onclick="ToggleTasksMenu" aria-expanded="@(!_navCollapsed && _tasksExpanded)" aria-label="Развернуть или свернуть раздел задач">
+                    <i class="bi bi-check2-square" aria-hidden="true"></i>
+                    <span class="nav-text">Задачи</span>
+                    @if (!_navCollapsed)
+                    {
+                        <span class="nav-group-arrow" aria-hidden="true">
+                            <i class="bi bi-chevron-down"></i>
+                        </span>
+                    }
+                </button>
+                @if (_tasksExpanded)
+                {
+                    <div class="nav-submenu">
+                        @if (_teamScopedProjectId.HasValue && _teamScopedTeamId.HasValue)
+                        {
+                            <a href="@TeamTasksUrl" class="nav-sub-link @(GetTeamNavClass("tasks"))">
+                                <span class="nav-sub-dot" aria-hidden="true"></span>
+                                <span class="nav-text">Активные задачи команды</span>
+                            </a>
+                            <a href="@TeamTaskHistoryUrl" class="nav-sub-link @(GetTeamNavClass("tasks"))">
+                                <span class="nav-sub-dot" aria-hidden="true"></span>
+                                <span class="nav-text">История задач команды</span>
+                            </a>
+                        }
+                        @if (!_isOwner && !_isAdmin)
+                        {
+                            <a href="/workplace/tasks/my" class="nav-sub-link @(GetNavClass("tasks"))">
+                                <span class="nav-sub-dot" aria-hidden="true"></span>
+                                <span class="nav-text">Мои задачи</span>
+                            </a>
+                            <a href="@MyTaskHistoryUrl" class="nav-sub-link @(GetNavClass("tasks"))">
+                                <span class="nav-sub-dot" aria-hidden="true"></span>
+                                <span class="nav-text">История моих задач</span>
+                            </a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>;
+
+    private RenderFragment SessionsNavSection => @<div class="nav-group @(IsSessionSectionActive() ? "is-active" : "") @( _sessionsExpanded ? "is-open" : "" )">
+        <button class="nav-group-title" type="button" @onclick="ToggleSessionsMenu" aria-expanded="@(!_navCollapsed && _sessionsExpanded)" aria-label="Развернуть или свернуть раздел сессий">
+            <i class="bi bi-stopwatch" aria-hidden="true"></i>
+            <span class="nav-text">Сессии</span>
+            @if (!_navCollapsed)
+            {
+                <span class="nav-group-arrow" aria-hidden="true">
+                    <i class="bi bi-chevron-down"></i>
+                </span>
+            }
+        </button>
+        @if (_sessionsExpanded)
+        {
+            <div class="nav-submenu">
+                <a href="/workplace/sessions/active" class="nav-sub-link @(GetNavClass("sessions-active"))">
+                    <span class="nav-sub-dot" aria-hidden="true"></span>
+                    <span class="nav-text">Активные сессии</span>
+                </a>
+                <a href="/workplace/sessions/history" class="nav-sub-link @(GetNavClass("sessions-history"))">
+                    <span class="nav-sub-dot" aria-hidden="true"></span>
+                    <span class="nav-text">История сессий</span>
+                </a>
+                <a href="/workplace/sessions/my-history" class="nav-sub-link @(GetNavClass("sessions-my-history"))">
+                    <span class="nav-sub-dot" aria-hidden="true"></span>
+                    <span class="nav-text">История моих сессий</span>
+                </a>
+            </div>
+        }
+    </div>;
+
+    private RenderFragment ChartsNavSection => @<div class="nav-group @(IsChartsSectionActive() ? "is-active" : "") @( _chartsExpanded ? "is-open" : "" )">
+        <button class="nav-group-title" type="button" @onclick="ToggleChartsMenu" aria-expanded="@(!_navCollapsed && _chartsExpanded)" aria-label="Развернуть или свернуть раздел графиков">
+            <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+            <span class="nav-text">Графики</span>
+            @if (!_navCollapsed)
+            {
+                <span class="nav-group-arrow" aria-hidden="true">
+                    <i class="bi bi-chevron-down"></i>
+                </span>
+            }
+        </button>
+        @if (_chartsExpanded)
+        {
+            <div class="nav-submenu">
+                <a href="/workplace/charts/work-time-statistics" class="nav-sub-link @(GetNavClass("charts-work-time"))">
+                    <span class="nav-sub-dot" aria-hidden="true"></span>
+                    <span class="nav-text">Статистика времени работы</span>
+                </a>
+            </div>
+        }
+    </div>;
+
+    private int? GetRoleIdFromJwt(string token, out string? roleName)
+    {
+        roleName = null;
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        try
+        {
+            var payloadJson = DecodeJwtPart(parts[1]);
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("role_id", out var roleIdEl))
+            {
+                if (roleIdEl.ValueKind == JsonValueKind.Number && roleIdEl.TryGetInt32(out var roleId))
+                    return roleId;
+                if (roleIdEl.ValueKind == JsonValueKind.String && int.TryParse(roleIdEl.GetString(), out roleId))
+                    return roleId;
+            }
+
+            roleName = ReadRoleName(root);
+            if (!string.IsNullOrWhiteSpace(roleName))
+            {
+                return roleName.Trim().ToLowerInvariant() switch
+                {
+                    "owner" => OwnerRoleId,
+                    "admin" => AdminRoleId,
+                    "teamlead" => TeamLeadRoleId,
+                    "employee" => EmployeeRoleId,
+                    "projectmanaget" => ProjectManagerRoleId,
+                    "project manager" => ProjectManagerRoleId,
+                    _ => null
+                };
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static string? ReadRoleName(JsonElement root)
+    {
+        if (root.TryGetProperty("role", out var roleEl))
+            return ExtractRole(roleEl);
+
+        const string roleClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        if (root.TryGetProperty(roleClaim, out var claimEl))
+            return ExtractRole(claimEl);
+
+        return null;
+    }
+
+    private static string? ExtractRole(JsonElement roleEl)
+    {
+        return roleEl.ValueKind switch
+        {
+            JsonValueKind.String => roleEl.GetString(),
+            JsonValueKind.Array => roleEl.GetArrayLength() > 0 ? roleEl[0].GetString() : null,
+            _ => null
+        };
+    }
+
+    private static string DecodeJwtPart(string input)
+    {
+        var s = input.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+        }
+        var bytes = Convert.FromBase64String(s);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    private string TeamBasePath =>
+        _teamScopedProjectId.HasValue && _teamScopedTeamId.HasValue
+            ? $"/workplace/projects/{_teamScopedProjectId}/teams/{_teamScopedTeamId}"
+            : "/workplace";
+
+    private string TeamInfoUrl => TeamBasePath;
+    private string TeamDashboardUrl => $"{TeamBasePath}/dashboard";
+    private string TeamMembersUrl => $"{TeamBasePath}/members";
+    private string TeamStatsUrl => $"{TeamBasePath}/stats";
+    private string TeamFilesUrl => $"{TeamBasePath}/files";
+    private string TeamTasksUrl => $"{TeamBasePath}/tasks";
+    private string TeamCalendarUrl => $"{TeamBasePath}/calendar";
+    private string TeamChatUrl => $"{TeamBasePath}/chat";
+    private string ProjectFilesUrl =>
+        _teamScopedProjectId.HasValue
+            ? $"/workplace/projects/{_teamScopedProjectId}/files"
+            : "/workplace";
+
+    private string GetTeamNavClass(string section)
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).TrimEnd('/');
+        if (!path.StartsWith("workplace", StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        var teamBase = _teamScopedProjectId.HasValue && _teamScopedTeamId.HasValue
+            ? $"workplace/projects/{_teamScopedProjectId}/teams/{_teamScopedTeamId}"
+            : string.Empty;
+
+        if (string.IsNullOrWhiteSpace(teamBase))
+            return "";
+
+        if (section == "info" && string.Equals(path, teamBase, StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "members" && path.Contains($"{teamBase}/members", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "stats" && path.Contains($"{teamBase}/stats", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "calendar" && path.Contains($"{teamBase}/calendar", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "files" && path.Contains($"{teamBase}/files", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "tasks" && path.Contains($"{teamBase}/tasks", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "chat" && path.Contains($"{teamBase}/chat", StringComparison.OrdinalIgnoreCase))
+            return "active";
+        if (section == "project-files" && _teamScopedProjectId.HasValue &&
+            path.Contains($"workplace/projects/{_teamScopedProjectId}/files", StringComparison.OrdinalIgnoreCase))
+            return "active";
+
+        return "";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Nav.LocationChanged -= OnLocationChanged;
+        StopStopwatchTicker();
+        _notifySub?.Dispose();
+        await ChatClient.DisposeAsync();
+    }
+
+    private sealed class ToastItem
+    {
+        public Guid Id { get; set; }
+        public string? Title { get; set; }
+        public string Text { get; set; } = "";
+        public string? LinkUrl { get; set; }
+        public string? LinkText { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsClosing { get; set; }
+    }
+}

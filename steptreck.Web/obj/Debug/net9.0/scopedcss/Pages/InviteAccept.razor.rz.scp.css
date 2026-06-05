@@ -1,0 +1,28 @@
+.invite-accept[b-yknsqucb1e] {
+    display: grid;
+    place-items: center;
+}
+
+.invite-card[b-yknsqucb1e] {
+    width: min(520px, 100%);
+    padding: 24px;
+    display: grid;
+    gap: 16px;
+}
+
+.invite-head h1[b-yknsqucb1e] {
+    margin: 0 0 6px;
+    font-size: 24px;
+}
+
+.invite-head p[b-yknsqucb1e] {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.actions[b-yknsqucb1e] {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+

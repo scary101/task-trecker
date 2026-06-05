@@ -1,0 +1,510 @@
+﻿@page "/workplace/data"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@inject steptreck.Web.ViewModel.BackupViewModel BackupVm
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+@using System.Text
+@using System.Text.Json
+
+@if (!_roleChecked)
+{
+    <main class="page data-page">
+        <section class="data-hero card">
+            <div>
+                <div class="data-kicker">Data Control</div>
+                <h1>Проверяем доступ...</h1>
+            </div>
+        </section>
+    </main>
+}
+else if (!_allowAccess)
+{
+    <main class="page data-page">
+        <section class="data-hero card">
+            <div>
+                <div class="data-kicker">Data Control</div>
+                <h1>Нет доступа</h1>
+                <p>Эта страница доступна только администратору.</p>
+            </div>
+        </section>
+    </main>
+}
+else
+{
+<main class="page data-page">
+    <section class="data-hero card">
+        <div>
+            <div class="data-kicker">Data Control</div>
+            <h1>Работа с данными</h1>
+            <p>Экспорт, импорт, резервные копии и SQL — с безопасными сценариями по умолчанию.</p>
+        </div>
+        <div class="data-hero-actions">
+            <span class="data-pill">Безопасно</span>
+            <span class="data-pill">Контроль</span>
+            <span class="data-pill">Аудит</span>
+        </div>
+    </section>
+
+    <section class="data-zone">
+        <div class="zone-head">
+            <div>
+                <div class="zone-title">Безопасные операции</div>
+                <p class="zone-subtitle">Обычные действия, не влияющие на целостность системы.</p>
+            </div>
+        </div>
+        <div class="zone-grid">
+            <article class="data-card compact card">
+                <div class="data-card-head">
+                    <div>
+                        <h2>Экспорт CSV</h2>
+                        <p>Скачайте таблицу для аналитики или архива.</p>
+                    </div>
+                </div>
+                <div class="data-form">
+                    <label class="label">Имя таблицы</label>
+                    <input class="input" placeholder="например: projects" @bind="_exportTable" />
+                    <button class="btn primary small" @onclick="ExportAsync" disabled="@_exportBusy">Скачать CSV</button>
+                    @if (!string.IsNullOrWhiteSpace(_exportStatus))
+                    {
+                        <div class="data-status @(_exportOk ? "ok" : "err")">@_exportStatus</div>
+                    }
+                </div>
+            </article>
+
+            <article class="data-card compact card">
+                <div class="data-card-head">
+                    <div>
+                        <h2>Импорт CSV</h2>
+                        <p>Загрузите файл и внесите данные в базу.</p>
+                    </div>
+                </div>
+                <div class="data-form">
+                    <label class="label">Имя таблицы</label>
+                    <input class="input" placeholder="например: projects" @bind="_importTable" />
+                    <label class="label">CSV файл</label>
+                    <InputFile OnChange="OnFileSelected" class="input" />
+                    <button class="btn primary small" @onclick="ImportAsync" disabled="@_importBusy">Импортировать</button>
+                    @if (!string.IsNullOrWhiteSpace(_importStatus))
+                    {
+                        <div class="data-status @(_importOk ? "ok" : "err")">@_importStatus</div>
+                    }
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="data-zone">
+        <div class="zone-head">
+            <div>
+                <div class="zone-title">Системные операции</div>
+                <p class="zone-subtitle">Резервные копии и восстановление данных.</p>
+            </div>
+        </div>
+        <div class="zone-grid">
+            <article class="data-card backup card">
+                <div class="data-card-head">
+                    <div class="icon-row">
+                        <span class="zone-icon">🛡️</span>
+                        <div>
+                            <h2>Резервная копия</h2>
+                            <p>Один клик — и у вас актуальный бэкап базы.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="data-form">
+                    <button class="btn primary small" @onclick="DownloadBackupAsync" disabled="@_backupBusy">Скачать бэкап</button>
+                    @if (!string.IsNullOrWhiteSpace(_backupStatus))
+                    {
+                        <div class="data-status @(_backupOk ? "ok" : "err")">@_backupStatus</div>
+                    }
+                </div>
+            </article>
+
+            <article class="data-card danger card">
+                <div class="data-card-head">
+                    <div class="icon-row">
+                        <span class="zone-icon warn">⚠️</span>
+                        <div>
+                            <h2>Восстановление данных</h2>
+                            <p>Операция перезапишет текущие данные.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="data-form">
+                    <label class="label">SQL файл</label>
+                    <InputFile OnChange="OnBackupFileSelected" class="input" />
+                    <button class="btn danger small" @onclick="UploadBackupAsync" disabled="@_backupBusy">Восстановить</button>
+                    @if (!string.IsNullOrWhiteSpace(_restoreStatus))
+                    {
+                        <div class="data-status @(_restoreOk ? "ok" : "err")">@_restoreStatus</div>
+                    }
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="data-zone">
+        <div class="zone-head">
+            <div>
+                <div class="zone-title">Advanced / Developer Tools</div>
+                <p class="zone-subtitle">SQL-консоль для технических пользователей.</p>
+            </div>
+        </div>
+        <article class="data-card sql card">
+            <div class="data-card-head">
+                <div>
+                    <h2>SQL консоль</h2>
+                    <p>Только SELECT-запросы. Изменение данных запрещено.</p>
+                </div>
+            </div>
+            <div class="data-sql-body">
+                <textarea class="input data-textarea" rows="8" placeholder="SELECT * FROM projects LIMIT 50;" @bind="_sql"></textarea>
+                <div class="data-sql-actions">
+                    <button class="btn primary small" @onclick="ExecuteSqlAsync" disabled="@_sqlBusy">Выполнить</button>
+                    <button class="btn ghost small" @onclick="ClearSql" disabled="@_sqlBusy">Очистить</button>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_sqlResult))
+                {
+                    <div class="data-sql-result">
+                        <pre>@_sqlResult</pre>
+                    </div>
+                }
+            </div>
+        </article>
+    </section>
+</main>
+}
+
+@code {
+    private const int AdminRoleId = 5;
+    private bool _roleChecked;
+    private bool _allowAccess;
+    private string _exportTable = "";
+    private bool _exportBusy;
+    private string? _exportStatus;
+    private bool _exportOk;
+
+    private string _importTable = "";
+    private IBrowserFile? _importFile;
+    private bool _importBusy;
+    private string? _importStatus;
+    private bool _importOk;
+
+    private string _sql = "";
+    private bool _sqlBusy;
+    private string? _sqlResult;
+
+    private IBrowserFile? _backupFile;
+    private bool _backupBusy;
+    private string? _backupStatus;
+    private bool _backupOk;
+    private string? _restoreStatus;
+    private bool _restoreOk;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _allowAccess = await RoleAccess.IsAdminAsync();
+        _roleChecked = true;
+
+        if (!_allowAccess)
+        {
+            Nav.NavigateTo("/workplace", replace: true);
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_exportTable))
+        {
+            _exportOk = false;
+            _exportStatus = "Введите имя таблицы.";
+            return;
+        }
+
+        _exportBusy = true;
+        _exportStatus = null;
+
+        try
+        {
+            var url = $"api/importexport/export/{_exportTable}";
+            var response = await Http.GetAsync(url);
+            var content = await response.Content.ReadAsByteArrayAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                _exportOk = false;
+                _exportStatus = System.Text.Encoding.UTF8.GetString(content);
+                return;
+            }
+
+            var fileName = response.Content.Headers.ContentDisposition?.FileName?.Trim('"');
+            if (string.IsNullOrWhiteSpace(fileName))
+                fileName = $"{_exportTable}_{DateTime.UtcNow:yyyyMMddHHmmss}.csv";
+
+            var base64 = Convert.ToBase64String(content);
+            await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "text/csv", base64);
+            _exportOk = true;
+            _exportStatus = $"Экспорт готов: {fileName}";
+        }
+        catch (Exception ex)
+        {
+            _exportOk = false;
+            _exportStatus = $"Ошибка экспорта: {ex.Message}";
+        }
+        finally
+        {
+            _exportBusy = false;
+        }
+    }
+
+    private void OnFileSelected(InputFileChangeEventArgs e)
+    {
+        _importFile = e.File;
+    }
+
+    private async Task ImportAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_importTable))
+        {
+            _importOk = false;
+            _importStatus = "Введите имя таблицы.";
+            return;
+        }
+
+        if (_importFile is null)
+        {
+            _importOk = false;
+            _importStatus = "Выберите CSV файл.";
+            return;
+        }
+
+        _importBusy = true;
+        _importStatus = null;
+
+        try
+        {
+            using var stream = _importFile.OpenReadStream(long.MaxValue);
+
+            using var form = new MultipartFormDataContent();
+            using var fileContent = new StreamContent(stream);
+
+            fileContent.Headers.ContentType =
+                new System.Net.Http.Headers.MediaTypeHeaderValue(_importFile.ContentType);
+
+            form.Add(fileContent, "file", _importFile.Name);
+
+            var url = $"api/importexport/import/{_importTable}";
+            var response = await Http.PostAsync(url, form);
+
+            var body = await response.Content.ReadAsStringAsync();
+
+            if (response.IsSuccessStatusCode)
+            {
+                _importOk = true;
+                _importStatus = body; 
+            }
+            else
+            {
+                _importOk = false;
+                _importStatus = body;
+            }
+        }
+        catch (Exception ex)
+        {
+            _importOk = false;
+            _importStatus = $"Ошибка импорта: {ex.Message}";
+        }
+        finally
+        {
+            _importBusy = false;
+        }
+    }
+
+    private async Task ExecuteSqlAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_sql))
+        {
+            _sqlResult = "SQL запрос пуст.";
+            return;
+        }
+
+        _sqlBusy = true;
+        _sqlResult = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/importexport/sql", _sql);
+            var body = await response.Content.ReadAsStringAsync();
+            _sqlResult = body;
+        }
+        catch (Exception ex)
+        {
+            _sqlResult = $"Ошибка выполнения: {ex.Message}";
+        }
+        finally
+        {
+            _sqlBusy = false;
+        }
+    }
+
+    private void ClearSql()
+    {
+        _sql = "";
+        _sqlResult = "";
+    }
+
+    private async Task DownloadBackupAsync()
+    {
+        _backupBusy = true;
+        _backupStatus = null;
+
+        try
+        {
+            var (result, file) = await BackupVm.DownloadAsync();
+            if (!result.Success || file is null)
+            {
+                _backupOk = false;
+                _backupStatus = result.Error ?? "Не удалось скачать бэкап.";
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(file.Content);
+            await JS.InvokeVoidAsync("steptreckDownload.saveFile", file.FileName, file.ContentType, base64);
+            _backupOk = true;
+            _backupStatus = $"Бэкап скачан: {file.FileName}";
+        }
+        catch (Exception ex)
+        {
+            _backupOk = false;
+            _backupStatus = $"Ошибка скачивания: {ex.Message}";
+        }
+        finally
+        {
+            _backupBusy = false;
+        }
+    }
+
+    private void OnBackupFileSelected(InputFileChangeEventArgs e)
+    {
+        _backupFile = e.File;
+    }
+
+    private async Task UploadBackupAsync()
+    {
+        if (_backupFile is null)
+        {
+            _restoreOk = false;
+            _restoreStatus = "Выберите SQL файл.";
+            return;
+        }
+
+        _backupBusy = true;
+        _restoreStatus = null;
+
+        try
+        {
+            await using var stream = _backupFile.OpenReadStream(50 * 1024 * 1024);
+
+            var result = await BackupVm.UploadAsync(
+                stream,
+                _backupFile.Name,
+                _backupFile.ContentType
+            );
+
+            if (result.Success)
+            {
+                _restoreOk = true;
+                _restoreStatus = result.Message ?? "База успешно восстановлена.";
+            }
+            else
+            {
+                _restoreOk = false;
+                _restoreStatus = result.Error ?? "Ошибка восстановления базы.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _restoreOk = false;
+            _restoreStatus = $"Ошибка восстановления: {ex.Message}";
+        }
+        finally
+        {
+            _backupBusy = false;
+        }
+    }
+
+    private int? GetRoleIdFromJwt(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        try
+        {
+            var payloadJson = DecodeJwtPart(parts[1]);
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("role_id", out var roleIdEl))
+            {
+                if (roleIdEl.ValueKind == JsonValueKind.Number && roleIdEl.TryGetInt32(out var roleId))
+                    return roleId;
+                if (roleIdEl.ValueKind == JsonValueKind.String && int.TryParse(roleIdEl.GetString(), out roleId))
+                    return roleId;
+            }
+
+            var roleName = ReadRoleName(root);
+            if (!string.IsNullOrWhiteSpace(roleName) &&
+                string.Equals(roleName.Trim(), "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return AdminRoleId;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static string? ReadRoleName(JsonElement root)
+    {
+        if (root.TryGetProperty("role", out var roleEl))
+            return ExtractRole(roleEl);
+
+        const string roleClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        if (root.TryGetProperty(roleClaim, out var claimEl))
+            return ExtractRole(claimEl);
+
+        return null;
+    }
+
+    private static string? ExtractRole(JsonElement roleEl)
+    {
+        return roleEl.ValueKind switch
+        {
+            JsonValueKind.String => roleEl.GetString(),
+            JsonValueKind.Array => roleEl.GetArrayLength() > 0 ? roleEl[0].GetString() : null,
+            _ => null
+        };
+    }
+
+    private static string DecodeJwtPart(string input)
+    {
+        var s = input.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+        }
+        var bytes = Convert.FromBase64String(s);
+        return Encoding.UTF8.GetString(bytes);
+    }
+}

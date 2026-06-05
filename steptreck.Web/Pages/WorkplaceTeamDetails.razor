@@ -1,0 +1,486 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}"
+@using steptreck.Domain.DTOs.TeamDTOs
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.TeamDTOs.MemberDTOs
+@using Microsoft.AspNetCore.Components.Forms
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page team-details-page">
+    <section class="section">
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="info"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert @(_alertKind)">@_alert</div>
+        }
+
+        <div class="details-layout no-sidebar">
+            <div class="details-shell card">
+                @if (_loading)
+                {
+                    <div class="details-empty">Загружаем команду...</div>
+                }
+                else if (_team is null)
+                {
+                    <div class="details-empty">Команда не найдена.</div>
+                }
+                else
+                {
+                    <div class="details-cover @(HasTeamBackground ? "has-bg" : "")" style="@TeamBackgroundStyle">
+                        @if (_isOwner)
+                        {
+                            <InputFile id="team-details-bg"
+                                       class="cover-bg-input"
+                                       accept="image/png,image/jpeg,image/webp"
+                                       OnChange="UploadTeamBackgroundAsync" />
+                            <label class="cover-bg-upload" for="team-details-bg">
+                                <i class="bi bi-camera" aria-hidden="true"></i>
+                                <span>@(_uploadingBackground ? "Загрузка..." : "Сменить фон")</span>
+                            </label>
+                        }
+                    </div>
+
+                    <div class="details-head">
+                        <div>
+                            <div class="details-kicker">Команда #@_team.Id</div>
+                            <h1>@_team.Name</h1>
+                            <p>@(!string.IsNullOrWhiteSpace(_team.Description) ? _team.Description : "Описание команды не задано.")</p>
+                        </div>
+                    </div>
+
+                    <div class="details-meta">
+                        <div class="meta-item">
+                            <span>Проект</span>
+                            <strong>#@_team.ProjectId</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Руководитель</span>
+                            <strong>@(_team.LeadFullName ?? "Не назначен")</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Создана</span>
+                            <strong>@FormatDate(_team.CreatedAt)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Обновлена</span>
+                            <strong>@FormatDate(_team.UpdatedAt)</strong>
+                        </div>
+                    </div>
+
+                    <div class="details-actions">
+                        @if (_isOwner)
+                        {
+                            <button class="btn ghost" type="button" @onclick="OpenEditModal">
+                                Редактировать команду
+                            </button>
+                            <button class="btn ghost" type="button" @onclick="OpenLeadModal">
+                                @(_team.LeadMemberId.HasValue ? "Переназначить руководителя команды" : "Назначить руководителя команды")
+                            </button>
+                        }
+                        <button class="btn ghost" type="button" @onclick="GoToAudit">
+                            Журнал аудита
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@if (_showEditModal)
+{
+    <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-people" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Редактировать команду</h2>
+                        <p>Обновите название и описание команды.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseEditModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_editAlert))
+            {
+                <div class="alert @(_editAlertKind)">@_editAlert</div>
+            }
+
+            <EditForm Model="_editModel" OnValidSubmit="UpdateTeamAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Название</label>
+                        <InputText class="input" @bind-Value="_editModel.Name" />
+                        <ValidationMessage For="@(() => _editModel.Name)" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Описание</label>
+                        <InputTextArea class="input" @bind-Value="_editModel.Description" />
+                        <ValidationMessage For="@(() => _editModel.Description)" />
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Сохранить</button>
+                    <button class="btn ghost" type="button" @onclick="CloseEditModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@if (_showLeadModal)
+{
+    <div class="modal-backdrop" @onclick="CloseLeadModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-person-check" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>@(_team?.LeadMemberId.HasValue == true ? "Переназначить руководителя" : "Назначить руководителя")</h2>
+                        <p>Выберите тимлида без команды в этом проекте. Текущий руководитель будет заменён.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseLeadModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_leadModel" OnValidSubmit="AssignLeadAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Руководитель</label>
+                        <InputSelect class="input" @bind-Value="_leadModel.MemberId">
+                            <option value="0">Выберите руководителя</option>
+                            @foreach (var lead in _freeLeads)
+                            {
+                                <option value="@lead.Id">@lead.FullName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">@(_team?.LeadMemberId.HasValue == true ? "Переназначить" : "Назначить")</button>
+                    <button class="btn ghost" type="button" @onclick="CloseLeadModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    [Parameter]
+    public int TeamId { get; set; }
+
+    private TeamReadDto? _team;
+    private bool _roleReady = true;
+
+    private bool _loading = true;
+    private bool _showEditModal;
+    private bool _showLeadModal;
+    private bool _busy;
+    private bool _uploadingBackground;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private string? _alert;
+    private string _alertKind = "ok";
+    private string? _editAlert;
+    private string _editAlertKind = "ok";
+    private List<MemberDto> _freeLeads = new();
+    private UpdateTeamDto _editModel = new();
+    private CreateLeadMebmerProjectDto _leadModel = new();
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private bool HasTeamBackground => !string.IsNullOrWhiteSpace(_team?.CardBackgroundUrl);
+
+    private string? TeamBackgroundStyle
+    {
+        get
+        {
+            var url = ResolveAssetUrl(_team?.CardBackgroundUrl);
+            return string.IsNullOrWhiteSpace(url)
+                ? null
+                : $"background-image: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.58)), url('{url}');";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+        if (_isEmployee)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/tasks", forceLoad: true);
+            return;
+        }
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+
+        _loading = true;
+        _team = await TeamsVm.GetTeamAsync(TeamId);
+        _freeLeads = await TeamsVm.GetFreeLeads(ProjectId);
+        _loading = false;
+    }
+
+    private void OpenEditModal()
+    {
+        if (_team is null)
+            return;
+
+        _editModel = new UpdateTeamDto
+        {
+            Name = _team.Name,
+            Description = _team.Description
+        };
+        _editAlert = null;
+        _editAlertKind = "ok";
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+    }
+
+    private async Task UpdateTeamAsync()
+    {
+        _busy = true;
+        _editAlert = null;
+        try
+        {
+            var result = await TeamsVm.UpdateTeamAsync(TeamId, _editModel);
+            if (!result.Success)
+            {
+                _editAlertKind = "err";
+                _editAlert = result.Error ?? "Не удалось обновить команду.";
+                return;
+            }
+
+            _team = await TeamsVm.GetTeamAsync(TeamId);
+            _showEditModal = false;
+            _alertKind = "ok";
+            _alert = "Команда обновлена.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenLeadModal()
+    {
+        if (_team is null)
+            return;
+
+        _freeLeads = await TeamsVm.GetFreeLeads(ProjectId);
+        _leadModel = new CreateLeadMebmerProjectDto
+        {
+            TeamId = TeamId,
+            MemberId = 0
+        };
+        _alert = null;
+        _alertKind = "ok";
+        _showLeadModal = true;
+    }
+
+    private void CloseLeadModal()
+    {
+        _showLeadModal = false;
+    }
+
+    private async Task AssignLeadAsync()
+    {
+        if (_leadModel.MemberId <= 0)
+        {
+            _alertKind = "err";
+            _alert = "Выберите руководителя.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await TeamsVm.AddLeadAsync(_leadModel);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = _team?.LeadMemberId.HasValue == true
+                    ? "Руководитель переназначен."
+                    : "Руководитель назначен.";
+                _showLeadModal = false;
+                _team = await TeamsVm.GetTeamAsync(TeamId);
+                _freeLeads = await TeamsVm.GetFreeLeads(ProjectId);
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось назначить руководителя.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task UploadTeamBackgroundAsync(InputFileChangeEventArgs e)
+    {
+        if (_team is null)
+            return;
+
+        var file = e.File;
+        if (!IsImageFile(file))
+        {
+            _alertKind = "err";
+            _alert = "Можно загрузить только jpeg, png или webp.";
+            return;
+        }
+
+        _uploadingBackground = true;
+        _alert = null;
+        try
+        {
+            await using var stream = file.OpenReadStream(5 * 1024 * 1024);
+            var (result, url) = await TeamsVm.UploadBackgroundAsync(_team.Id, stream, file.Name, file.ContentType);
+            if (!result.Success || string.IsNullOrWhiteSpace(url))
+            {
+                _alertKind = "err";
+                _alert = result.Error ?? "Не удалось загрузить фон команды.";
+                return;
+            }
+
+            _team.CardBackgroundUrl = AddCacheBust(url);
+            _team.UpdatedAt = DateTime.UtcNow;
+            _alertKind = "ok";
+            _alert = "Фон команды обновлён.";
+        }
+        catch (IOException)
+        {
+            _alertKind = "err";
+            _alert = "Файл слишком большой. Максимум 5 MB.";
+        }
+        finally
+        {
+            _uploadingBackground = false;
+        }
+    }
+
+    private static bool IsImageFile(IBrowserFile file)
+    {
+        var contentType = file.ContentType?.ToLowerInvariant() ?? "";
+        var extension = Path.GetExtension(file.Name)?.ToLowerInvariant();
+        return contentType is "image/jpeg" or "image/png" or "image/webp" ||
+               extension is ".jpg" or ".jpeg" or ".png" or ".webp";
+    }
+
+    private string? ResolveAssetUrl(string? rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return null;
+
+        var raw = rawUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = Config["Api:BaseUrl"]?.TrimEnd('/') ?? "";
+        if (string.IsNullOrWhiteSpace(apiBase) || !Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        return new Uri(baseUri, raw.TrimStart('/')).ToString();
+    }
+
+    private static string AddCacheBust(string url)
+    {
+        var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+        return $"{url}{separator}v={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToDashboard()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/dashboard");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+
+    private void GoToAudit()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/audit");
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+    }
+}
+
+
+
+

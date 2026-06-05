@@ -1,0 +1,160 @@
+﻿@page "/workplace/projects/{ProjectId:int}/members"
+@using steptreck.Domain.DTOs.MemberDTOs
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page project-members-page">
+    <section class="section">
+        <ProjectSectionTabs ProjectId="ProjectId" Active="members" />
+
+        <div class="details-layout no-sidebar">
+            <div class="members-shell">
+                <div class="section-head">
+                    <div>
+                        <h1>Участники проекта</h1>
+                        <p class="section-subtitle">Список участников, закрепленных за командами проекта.</p>
+                    </div>
+                </div>
+
+                @if (_loading)
+                {
+                    <div class="members-empty card">Загружаем участников...</div>
+                }
+                else if (_members.Count == 0)
+                {
+                    <div class="members-empty card">В проекте пока нет участников.</div>
+                }
+                else
+                {
+                    <section class="members-grid">
+                        @foreach (var m in _members)
+                        {
+                            <article class="member-card card" role="button" tabindex="0" @onclick="() => OpenMember(m.Id)">
+                                <div class="member-head">
+                                    <div class="member-avatar">
+                                        @if (!string.IsNullOrWhiteSpace(GetAvatarUrl(m)))
+                                        {
+                                            <img src="@GetAvatarUrl(m)" alt="Avatar" />
+                                        }
+                                        else
+                                        {
+                                            <span>@BuildInitials(m.FullName)</span>
+                                        }
+                                    </div>
+                                    <div class="member-info">
+                                        <div class="member-name">@m.FullName</div>
+                                        <div class="member-role">@GetRoleLabel(m.Role)</div>
+                                        <div class="member-status @GetStatusClass(m.IsActive)">@GetStatusLabel(m.IsActive)</div>
+                                    </div>
+                                </div>
+                                <div class="member-footer">
+                                    <span class="member-id">#@m.Id</span>
+                                    <span class="member-open">Открыть профиль</span>
+                                </div>
+                            </article>
+                        }
+                    </section>
+                }
+            </div>
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    private List<MemberDto> _members = new();
+    private bool _loading = true;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        if (roleId == TeamLeadRoleId || roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        _loading = true;
+        _members = await MembersVm.GetByProject(ProjectId);
+        _loading = false;
+    }
+
+    private void OpenMember(int id)
+    {
+        Nav.NavigateTo($"/workplace/members/{id}");
+    }
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}");
+
+    private void GoToTeams()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/members");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/files");
+
+    private string? GetAvatarUrl(MemberDto m)
+    {
+        var avatarUrl = m.AvatarUtl;
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static string GetStatusLabel(bool active) => active ? "Активен" : "Не активен";
+    private static string GetStatusClass(bool active) => active ? "ok" : "err";
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+}
+
+

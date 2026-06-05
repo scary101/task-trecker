@@ -1,0 +1,337 @@
+@page "/workplace/members/{MemberId:int}"
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.Enums
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.MemberScoreViewModel ScoreVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page member-profile-page">
+    <section class="section">
+        <div class="profile-grid">
+            <section class="profile-card card">
+                @if (_loading)
+                {
+                    <div class="members-empty">Загружаем профиль...</div>
+                }
+                else if (_member is null)
+                {
+                    <div class="members-empty">Участник не найден.</div>
+                }
+                else
+                {
+                    <div class="profile-head">
+                        <div class="avatar">
+                            @if (!string.IsNullOrWhiteSpace(_member.AvatarUrl))
+                            {
+                                <img src="@BuildAvatarUrl(_member.AvatarUrl)" alt="Avatar" />
+                            }
+                            else
+                            {
+                                <span>@BuildInitials(_member.FullName)</span>
+                            }
+                        </div>
+                        <div class="profile-info">
+                            <h1>@_member.FullName</h1>
+                            <div class="profile-tags">
+                                <span class="tag">@GetRoleLabel(_member.RoleName)</span>
+                                <span class="tag @GetStatusClass(_member.IsActive)">@GetStatusLabel(_member.IsActive)</span>
+                            </div>
+                            <p>@_member.OrganizationName</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-meta">
+                        <div class="meta-item">
+                            <span>ID</span>
+                            <strong>#@_member.Id</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Роль</span>
+                            <strong>@GetRoleLabel(_member.RoleName)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Статус</span>
+                            <strong>@GetStatusLabel(_member.IsActive)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Дата входа</span>
+                            <strong>@FormatDate(_member.CreatedAt)</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Обновлено</span>
+                            <strong>@FormatDate(_member.UpdatedAt)</strong>
+                        </div>
+                    </div>
+
+                    <div class="profile-team">
+                        <h2>Команда</h2>
+                        @if (_member?.Team is null)
+                        {
+                            <p class="side-muted">Участник пока не закреплен за командой.</p>
+                        }
+                        else
+                        {
+                            <div class="side-block">
+                                <div class="side-title">@_member.Team.TeamName</div>
+                                @if (!string.IsNullOrWhiteSpace(_member.Team.TeamDescription))
+                                {
+                                    <p>@_member.Team.TeamDescription</p>
+                                }
+                                <div class="side-row">
+                                    <span>Роль в команде</span>
+                                    <strong>@(_member.Team.TeamRole ?? "—")</strong>
+                                </div>
+                                <div class="side-row">
+                                    <span>Проект</span>
+                                    <strong>#@_member.Team.ProjectId</strong>
+                                </div>
+                                <div class="side-row">
+                                    <span>Вступил</span>
+                                    <strong>@FormatDate(_member.Team.JoinedAt)</strong>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }                <div class="actions">
+                    @if (!_isOwner)
+                    {
+                        <a class="btn ghost" href="/workplace/members/@MemberId/tasks">Активные задачи</a>
+                        <a class="btn ghost" href="/workplace/members/@MemberId/tasks/history">История задач</a>
+                    }
+                    <a class="btn ghost" href="/workplace/members/@MemberId/audit">Журнал аудита</a>
+                </div>            </section>
+
+            <aside class="trust-side">
+                @if (_score is null)
+                {
+                    <div class="profile-score-empty">Статистика пока не рассчитана.</div>
+                }
+                else
+                {
+                    <ScoreCard Title="Trust"
+                               Name="@_member?.FullName"
+                               Subtitle="@($"ID #{_member?.Id}")"
+                               Trust="@_score.Trust"
+                               MissRate="@_score.MissRate"
+                               CompletedCount="@_score.CompletedCount"
+                               MissedCount="@_score.MissedCount"
+                               TrustLevel="@_score.TrustLevel"
+                               Logs="@_score.LogScore"
+                               PriorityStats="@_score.PriorityStats" />
+                }
+            </aside>
+        </div>
+    </section>
+</main>
+
+@if (_showEditModal)
+{
+    <div class="modal-backdrop" @onclick="CloseEditModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-person-gear" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Редактировать сотрудника</h2>
+                        <p>Обновите данные сотрудника и сохраните изменения.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseEditModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_edit" OnValidSubmit="UpdateMemberAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field">
+                        <label class="label">Фамилия</label>
+                        <InputText class="input" @bind-Value="_edit.Surname" />
+                    </div>
+                    <div class="field">
+                        <label class="label">Имя</label>
+                        <InputText class="input" @bind-Value="_edit.Name" />
+                    </div>
+                    <div class="field">
+                        <label class="label">Отчество</label>
+                        <InputText class="input" @bind-Value="_edit.Patronymic" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Роль</label>
+                        @if (_canEditRole)
+                        {
+                        <InputSelect class="input" @bind-Value="_edit.RoleId">
+                            @foreach (var role in _roles)
+                            {
+                                <option value="@((int)role)">@GetRoleLabel(role)</option>
+                            }
+                        </InputSelect>
+                        }
+                        else
+                        {
+                            <div class="input readonly">@GetRoleLabel(_member?.RoleName)</div>
+                        }
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Сохранить</button>
+                    <button class="btn ghost" type="button" @onclick="CloseEditModal" disabled="@_busy">Отмена</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int MemberId { get; set; }
+
+    private MemberProfileDto? _member;
+    private ScoreDto? _score;
+    private bool _loading = true;
+    private bool _showEditModal;
+    private bool _busy;
+    private UpdateMemberDto _edit = new();
+    private string? _alert;
+    private string _alertKind = "ok";
+    private bool _isOwner;
+    private bool _canEditRole;
+    private readonly RoleEnum[] _roles = new[] { RoleEnum.Owner, RoleEnum.TeamLead, RoleEnum.Employee };
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }        if (roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        _isOwner = roleId == OwnerRoleId;
+        _canEditRole = _isOwner;
+        _loading = true;
+        _member = await MembersVm.GetProfile(MemberId);
+        _score = await ScoreVm.GetMebmerScore(MemberId);
+        _loading = false;
+    }
+
+    private void OpenEditModal()
+    {
+        if (_member is null)
+            return;
+
+        _edit = new UpdateMemberDto
+        {
+            Surname = _member.Surname,
+            Name = _member.Name,
+            Patronymic = _member.Patronymic,
+            RoleId = _member.RoleId
+        };
+
+        _alert = null;
+        _alertKind = "ok";
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+    }
+
+    private async Task UpdateMemberAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var ok = await MembersVm.UpdateAsync(MemberId, _edit);
+            if (ok)
+            {
+                _alertKind = "ok";
+                _alert = "Данные сотрудника обновлены.";
+                _member = await MembersVm.GetProfile(MemberId);
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = "Не удалось обновить сотрудника.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string? BuildAvatarUrl(string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static string GetStatusLabel(bool active) => active ? "Активен" : "Не активен";
+    private static string GetStatusClass(bool active) => active ? "ok" : "err";
+
+    private static string GetRoleLabel(RoleEnum role) => role switch
+    {
+        _ => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role)
+    };
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+    }
+}
+

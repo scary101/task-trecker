@@ -1,0 +1,96 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: steptreck/Dockerfile
+    expose:
+      - "8080"
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      DOTNET_ENVIRONMENT: Docker
+      App__FrontendUrl: http://localhost:7152
+      Minio__Endpoint: minio:9000
+      Minio__AccessKey: minioadmin
+      Minio__SecretKey: minioadmin
+      Minio__UseSSL: "false"
+      Minio__Bucket: steptreck-files
+      Prometheus__BaseUrl: http://prometheus:9090
+    depends_on:
+      - minio
+    networks:
+      - steptreck
+
+  web:
+    build:
+      context: .
+      dockerfile: steptreck.Web/Dockerfile
+      args:
+        BUILD_ENVIRONMENT: Docker
+    ports:
+      - "7152:80"
+    environment:
+      DOTNET_ENVIRONMENT: Docker
+    depends_on:
+      - api
+    networks:
+      - steptreck
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - steptreck
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./steptreck/Monitoting/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api
+      - node-exporter
+    networks:
+      - steptreck
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - steptreck
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+    volumes:
+      - '/:/host:ro'
+      - '/proc:/host/proc:ro'
+      - '/sys:/host/sys:ro'
+    restart: unless-stopped
+    networks:
+      - steptreck
+
+networks:
+  steptreck:
+    driver: bridge
+
+volumes:
+  minio_data:
+  grafana_data:

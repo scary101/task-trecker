@@ -1,0 +1,4 @@
+root = true
+
+[*.razor]
+charset = utf-8-bom

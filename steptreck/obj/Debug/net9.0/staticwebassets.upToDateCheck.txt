@@ -1,0 +1,11 @@
+C:\Users\meloc\source\repos\steptreck\steptreck\wwwroot\redoc.html
+wwwroot\avatars\member12026020411010172de7fc3.jpg
+wwwroot\avatars\member1202604241331245fc0e700.jpg
+wwwroot\avatars\member1220260202000246072dc194.jpg
+wwwroot\avatars\member2202604300951446d156b89.png
+wwwroot\avatars\member6_20260503214339_05a6cdef.jpg
+wwwroot\project-backgrounds\project4_20260507112128_7f3cf33d.jpg
+wwwroot\project-backgrounds\project5_20260507112133_dffdd283.jpg
+wwwroot\redoc.html
+wwwroot\team-backgrounds\team3_20260504215728_a50d7d85.png
+wwwroot\team-backgrounds\team4_20260507113441_69884dcd.jpg

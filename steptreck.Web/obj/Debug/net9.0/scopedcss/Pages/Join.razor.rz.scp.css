@@ -1,0 +1,35 @@
+:host[b-vat2foc8c7] {
+    display: block;
+}
+
+.join[b-vat2foc8c7] {
+    display: grid;
+    place-items: center;
+}
+
+.join-card[b-vat2foc8c7] {
+    width: min(520px, 100%);
+    padding: 24px;
+    display: grid;
+    gap: 16px;
+}
+
+.join-head h1[b-vat2foc8c7] {
+    margin: 0 0 6px;
+    font-size: 24px;
+}
+
+.join-head p[b-vat2foc8c7] {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.actions[b-vat2foc8c7] {
+    display: flex;
+    gap: 12px;
+}
+
+.actions .btn[b-vat2foc8c7] {
+    flex: 1;
+}
+

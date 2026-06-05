@@ -1,0 +1,126 @@
+.project-members-page[b-kpj1mdg61w] {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.members-shell[b-kpj1mdg61w] {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.section-head[b-kpj1mdg61w] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.members-grid[b-kpj1mdg61w] {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.members-empty[b-kpj1mdg61w] {
+    padding: 16px;
+    color: var(--text-secondary);
+}
+
+.member-card[b-kpj1mdg61w] {
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.member-card:hover[b-kpj1mdg61w] {
+    transform: translateY(-2px);
+    border-color: rgba(var(--primary-rgb), 0.35);
+    box-shadow: 0 16px 30px rgba(var(--bg-card-soft-rgb), 0.25);
+}
+
+.member-head[b-kpj1mdg61w] {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: center;
+}
+
+.member-avatar[b-kpj1mdg61w] {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    color: var(--text-secondary);
+    overflow: hidden;
+}
+
+.member-avatar img[b-kpj1mdg61w] {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.member-info[b-kpj1mdg61w] {
+    display: grid;
+    gap: 6px;
+}
+
+.member-name[b-kpj1mdg61w] {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.member-role[b-kpj1mdg61w] {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.member-status[b-kpj1mdg61w] {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    width: fit-content;
+}
+
+.member-status.ok[b-kpj1mdg61w] {
+    color: var(--success);
+    border-color: rgba(var(--success-rgb), 0.4);
+}
+
+.member-status.err[b-kpj1mdg61w] {
+    color: var(--warning);
+    border-color: rgba(var(--warning-rgb), 0.4);
+}
+
+.member-footer[b-kpj1mdg61w] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.member-id[b-kpj1mdg61w] {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.member-open[b-kpj1mdg61w] {
+    color: var(--text-secondary);
+}

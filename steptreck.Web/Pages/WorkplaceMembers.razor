@@ -1,0 +1,341 @@
+﻿@page "/workplace/members"
+@using System.Text
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.AuthDTOs
+@using steptreck.Domain.Enums
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.InviteViewModel InviteVm
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="page members-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>Участники организации</h1>
+                <p class="section-subtitle">Вся команда в одном списке. Нажмите на карточку, чтобы открыть профиль.</p>
+            </div>
+            <button class="btn primary" type="button" @onclick="OpenInviteModal">Добавить участника</button>
+        </div>
+
+        <section class="members-toolbar card">
+            <label class="members-filter members-search">
+                <span>Поиск</span>
+                <input @bind="_searchTerm" @bind:event="oninput" type="search" placeholder="" />
+            </label>
+
+            <label class="members-filter">
+                <span>Роль</span>
+                <select @bind="_roleFilter">
+                    <option value="">Все роли</option>
+                    @foreach (var role in AvailableRoleFilters)
+                    {
+                        <option value="@role">@role</option>
+                    }
+                </select>
+            </label>
+
+            <div class="members-filter members-filter-action">
+                <span>Выгрузка</span>
+                <button class="btn ghost export-btn" type="button" @onclick="ExportAsync" disabled="@(!FilteredMembers.Any())">
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    <span>В Excel</span>
+                </button>
+            </div>
+
+            <div class="members-filter members-filter-action">
+                <span>Сброс</span>
+                <button class="btn ghost export-btn" type="button" @onclick="ResetFilters">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                    <span>Сбросить</span>
+                </button>
+            </div>
+        </section>
+
+        @if (_loading)
+        {
+            <div class="members-empty card">Загружаем участников...</div>
+        }
+        else if (FilteredMembers.Count == 0)
+        {
+            <div class="members-empty card">По выбранным фильтрам участники не найдены.</div>
+        }
+        else
+        {
+            <section class="members-grid">
+                @foreach (var m in FilteredMembers)
+                {
+                    <article class="member-card card" role="button" tabindex="0" @onclick="() => OpenMember(m.Id)">
+                        <div class="member-head">
+                            <div class="member-avatar">
+                                @if (!string.IsNullOrWhiteSpace(GetAvatarUrl(m)))
+                                {
+                                    <img src="@GetAvatarUrl(m)" alt="Avatar" />
+                                }
+                                else
+                                {
+                                    <span>@BuildInitials(m.FullName)</span>
+                                }
+                            </div>
+                            <div class="member-info">
+                                <div class="member-name">@m.FullName</div>
+                                <div class="member-role">@GetRoleLabel(m.Role)</div>
+                                <div class="member-status @GetStatusClass(m.IsActive)">@GetStatusLabel(m.IsActive)</div>
+                            </div>
+                        </div>
+                        <div class="member-footer">
+                            <span class="member-id">#@m.Id</span>
+                            <span class="member-open">Открыть профиль</span>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+    </section>
+</main>
+
+@if (_showInviteModal)
+{
+    <div class="modal-backdrop" @onclick="CloseInviteModal">
+        <div class="modal card" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <div class="modal-title-wrap">
+                    <span class="modal-icon"><i class="bi bi-person-plus" aria-hidden="true"></i></span>
+                    <div>
+                        <h2>Пригласить участника</h2>
+                        <p>Участнику придет ссылка для вступления в организацию.</p>
+                    </div>
+                </div>
+                <button class="modal-close" type="button" @onclick="CloseInviteModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <EditForm Model="_invite" OnValidSubmit="InviteAsync">
+                <DataAnnotationsValidator />
+                <div class="form-grid">
+                    <div class="field span-2">
+                        <label class="label">Корпоративный Email</label>
+                        <InputText class="input" @bind-Value="_invite.CorporateEmail" placeholder="name@company.com" />
+                    </div>
+                    <div class="field span-2">
+                        <label class="label">Роль</label>
+                        <InputSelect class="input" @bind-Value="_invite.RoleId">
+                            @foreach (var role in _roles)
+                            {
+                                <option value="@((int)role)">@GetRoleLabel(role)</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn primary" type="submit" disabled="@_busy">Отправить приглашение</button>
+                    <button class="btn ghost" type="button" @onclick="ResetInvite" disabled="@_busy">Очистить</button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private List<MemberDto> _members = new();
+    private bool _loading = true;
+    private bool _busy;
+    private bool _showInviteModal;
+    private RegisterMebmerDto _invite = new() { RoleId = (int)RoleEnum.Employee };
+    private string? _alert;
+    private string _alertKind = "ok";
+    private readonly RoleEnum[] _roles = new[] { RoleEnum.TeamLead, RoleEnum.Employee };
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private string _searchTerm = string.Empty;
+    private string _roleFilter = string.Empty;
+
+    private string ApiBase =>
+        Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    private List<MemberDto> FilteredMembers => _members
+        .Where(MatchesSearch)
+        .Where(MatchesRole)
+        .OrderBy(x => x.FullName)
+        .ToList();
+
+    private IEnumerable<string> AvailableRoleFilters => _members
+        .Select(m => GetRoleLabel(m.Role))
+        .Where(role => !string.IsNullOrWhiteSpace(role) && role != "—")
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .OrderBy(role => role);
+
+    protected override async Task OnInitializedAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        if (roleId == TeamLeadRoleId || roleId == EmployeeRoleId)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+            if (profile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return;
+        }
+
+        _members = await MembersVm.GetAllAsync();
+        _loading = false;
+    }
+
+    private void OpenMember(int id)
+    {
+        Nav.NavigateTo($"/workplace/members/{id}");
+    }
+
+    private bool MatchesSearch(MemberDto member)
+    {
+        if (string.IsNullOrWhiteSpace(_searchTerm))
+            return true;
+
+        return member.FullName.Contains(_searchTerm.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool MatchesRole(MemberDto member)
+    {
+        if (string.IsNullOrWhiteSpace(_roleFilter))
+            return true;
+
+        return string.Equals(GetRoleLabel(member.Role), _roleFilter, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ResetFilters()
+    {
+        _searchTerm = string.Empty;
+        _roleFilter = string.Empty;
+    }
+
+    private void OpenInviteModal()
+    {
+        _alert = null;
+        _alertKind = "ok";
+        _showInviteModal = true;
+    }
+
+    private void CloseInviteModal()
+    {
+        _showInviteModal = false;
+    }
+
+    private async Task InviteAsync()
+    {
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await InviteVm.InviteMemberAsync(_invite);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = res.Message ?? "Приглашение отправлено.";
+                ResetInvite();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось отправить приглашение.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void ResetInvite()
+    {
+        _invite = new RegisterMebmerDto { RoleId = (int)RoleEnum.Employee };
+    }
+
+    private async Task ExportAsync()
+    {
+        var rows = new StringBuilder();
+        rows.AppendLine("\uFEFFФИО,Роль,Статус,ID");
+
+        foreach (var member in FilteredMembers)
+        {
+            rows.Append(EscapeCsv(member.FullName)).Append(',')
+                .Append(EscapeCsv(GetRoleLabel(member.Role))).Append(',')
+                .Append(EscapeCsv(GetStatusLabel(member.IsActive))).Append(',')
+                .Append(EscapeCsv(member.Id.ToString())).AppendLine();
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(rows.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"members_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "text/csv;charset=utf-8", base64);
+    }
+
+    private string? GetAvatarUrl(MemberDto m)
+    {
+        var avatarUrl = m.AvatarUtl;
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 0)
+            return "ST";
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+
+    private static string GetStatusLabel(bool active) => active ? "Активен" : "Не активен";
+    private static string GetStatusClass(bool active) => active ? "ok" : "err";
+
+    private static string GetRoleLabel(RoleEnum role) => role switch
+    {
+        _ => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role)
+    };
+
+    private static string GetRoleLabel(string? role)
+        => steptreck.Web.Services.RoleDisplayService.GetRoleLabel(role);
+
+    private static string EscapeCsv(string? value)
+    {
+        var text = value ?? string.Empty;
+        if (text.Contains('"'))
+            text = text.Replace("\"", "\"\"");
+
+        return $"\"{text}\"";
+    }
+}

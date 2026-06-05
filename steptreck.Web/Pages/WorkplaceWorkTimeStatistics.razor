@@ -1,0 +1,587 @@
+@page "/workplace/charts/work-time-statistics"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@using System.Globalization
+@using System.Text
+@using steptreck.Domain.DTOs.ProjectDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@using steptreck.Domain.DTOs.WorkSessionDTOs
+@inject steptreck.Web.ViewModel.WorkSessionViewModel WorkSessionVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.ViewModel.ProjectsViewModel ProjectsVm
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<main class="page work-time-page">
+    <section class="section">
+        <div class="section-head">
+            <div>
+                <h1>Статистика времени работы</h1>
+                <p class="section-subtitle">@_subtitle</p>
+            </div>
+            <button class="btn primary" type="button" @onclick="ReloadAsync" disabled="@_loading">Обновить</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alert))
+        {
+            <div class="alert err">@_alert</div>
+        }
+
+        <section class="work-time-toolbar">
+            <div class="scope-summary">@_scopeLabel</div>
+
+            <div class="range-pills" role="group" aria-label="Быстрые периоды">
+                @foreach (var preset in Presets)
+                {
+                    <button class="range-pill @(IsPresetActive(preset.Days) ? "active" : null)" type="button" @onclick="() => ApplyPreset(preset.Days)">
+                        @preset.Label
+                    </button>
+                }
+            </div>
+
+            <div class="date-filters">
+                @if (_showOwnerFilters)
+                {
+                    <label class="date-filter">
+                        <span>Проект</span>
+                        <select value="@_selectedProjectId" @onchange="OnProjectFilterChanged">
+                            <option value="">Все проекты</option>
+                            @foreach (var project in _projects)
+                            {
+                                <option value="@project.Id">@project.Name</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="date-filter">
+                        <span>Команда</span>
+                        <select value="@_selectedTeamId" @onchange="OnTeamFilterChanged" disabled="@(!_ownerTeams.Any())">
+                            <option value="">@(_ownerTeams.Any() ? "Все команды проекта" : "Сначала выберите проект")</option>
+                            @foreach (var team in _ownerTeams)
+                            {
+                                <option value="@team.Id">@team.Name</option>
+                            }
+                        </select>
+                    </label>
+                }
+
+                <label class="date-filter">
+                    <span>С</span>
+                    <input type="date" value="@_dateFromText" @onchange="OnDateFromChanged" />
+                </label>
+                <label class="date-filter">
+                    <span>По</span>
+                    <input type="date" value="@_dateToText" @onchange="OnDateToChanged" />
+                </label>
+                <button class="btn ghost reset-filter-btn" type="button" @onclick="ResetFiltersAsync">
+                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+                    <span>Сбросить</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="work-time-summary">
+            <article class="summary-card card">
+                <span>Всего часов</span>
+                <strong>@TotalHoursText</strong>
+            </article>
+            <article class="summary-card card">
+                <span>Среднее в день</span>
+                <strong>@AverageHoursText</strong>
+            </article>
+            <article class="summary-card card">
+                <span>Пиковый день</span>
+                <strong>@PeakDayText</strong>
+            </article>
+            <article class="summary-card card">
+                <span>Период</span>
+                <strong>@PeriodText</strong>
+            </article>
+        </section>
+
+        <section class="work-time-chart card">
+            <div class="chart-head">
+                <div>
+                    <div class="chart-title">Дневная динамика</div>
+                    <div class="chart-subtitle">Суммарное время работы по завершенным сессиям в выбранном scope.</div>
+                </div>
+                <div class="chart-head-actions">
+                    <div class="chart-meta">@ChartPeriodLabel</div>
+                    <button class="btn ghost chart-export-btn" type="button" @onclick="ExportAllSessionsAsync" disabled="@(!FilteredSessions.Any())">
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                        <span>Все сессии в Excel</span>
+                    </button>
+                </div>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="chart-empty">Загружаем данные графика...</div>
+            }
+            else if (DailyStats.Count == 0)
+            {
+                <div class="chart-empty">За выбранный период нет данных для построения графика.</div>
+            }
+            else
+            {
+                <div class="chart-canvas-wrap">
+                    <canvas id="work-time-chart"></canvas>
+                </div>
+            }
+        </section>
+
+        <section class="work-time-table card">
+            <div class="chart-head">
+                <div>
+                    <div class="chart-title">Топ 10 нагруженных дней</div>
+                    <div class="chart-subtitle">Дни с максимальным суммарным временем работы в выбранном периоде.</div>
+                </div>
+                <button class="btn ghost chart-export-btn" type="button" @onclick="ExportTopDaysAsync" disabled="@(!TopDays.Any())">
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    <span>Топ 10 в Excel</span>
+                </button>
+            </div>
+
+            @if (!_loading && TopDays.Count > 0)
+            {
+                <div class="table-list">
+                    @foreach (var day in TopDays)
+                    {
+                        <article class="table-row">
+                            <div>
+                                <div class="table-date">#@day.Rank · @day.Date.ToString("dd.MM.yyyy")</div>
+                                <div class="table-subtitle">@day.Date.ToString("dddd", RuCulture)</div>
+                            </div>
+                            <div class="table-metric">
+                                <span>Часы</span>
+                                <strong>@day.TotalHours.ToString("0.##", RuCulture)</strong>
+                            </div>
+                            <div class="table-metric">
+                                <span>Сессии</span>
+                                <strong>@day.SessionCount</strong>
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+            else if (!_loading)
+            {
+                <div class="chart-empty compact">Нет данных для топа дней.</div>
+            }
+        </section>
+    </section>
+</main>
+
+@code {
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private static readonly CultureInfo RuCulture = new("ru-RU");
+    private readonly (string Label, int Days)[] Presets =
+    [
+        ("1 неделя", 7),
+        ("1 месяц", 30),
+        ("3 месяца", 90),
+        ("Пол года", 180),
+        ("Год", 365)
+    ];
+
+    private List<WorkSessionHistoryDto> _items = new();
+    private List<ProjectReadDto> _projects = new();
+    private List<TeamReadDto> _ownerTeams = new();
+    private bool _loading = true;
+    private bool _showOwnerFilters;
+    private string? _alert;
+    private DateOnly _dateFrom;
+    private DateOnly _dateTo;
+    private string _selectedProjectId = string.Empty;
+    private string _selectedTeamId = string.Empty;
+    private int? _teamScopeId;
+    private string _subtitle = "Тенденция рабочего времени сотрудников по дням за выбранный период.";
+    private string _scopeLabel = "Вся организация";
+    private IJSObjectReference? _module;
+    private bool _chartDirty = true;
+
+    private string _dateFromText => _dateFrom.ToString("yyyy-MM-dd");
+    private string _dateToText => _dateTo.ToString("yyyy-MM-dd");
+    private List<DailyWorkPoint> DailyStats => BuildDailyStats();
+    private List<WorkSessionHistoryDto> FilteredSessions => BuildFilteredSessions();
+    private List<TopDayRow> TopDays => DailyStats
+        .OrderByDescending(x => x.TotalHours)
+        .ThenByDescending(x => x.SessionCount)
+        .ThenBy(x => x.Date)
+        .Take(10)
+        .Select((x, index) => new TopDayRow(index + 1, x.Date, x.TotalHours, x.SessionCount))
+        .ToList();
+    private string TotalHoursText => $"{DailyStats.Sum(x => x.TotalHours).ToString("0.##", RuCulture)} ч";
+    private string AverageHoursText => DailyStats.Count == 0 ? "0 ч" : $"{DailyStats.Average(x => x.TotalHours).ToString("0.##", RuCulture)} ч";
+    private string ChartPeriodLabel => $"{DailyStats.Count} дн.";
+
+    private string PeakDayText
+    {
+        get
+        {
+            var peak = DailyStats.OrderByDescending(x => x.TotalHours).FirstOrDefault();
+            return peak is null ? "—" : $"{peak.Date:dd.MM} · {peak.TotalHours.ToString("0.##", RuCulture)} ч";
+        }
+    }
+
+    private string PeriodText => $"{_dateFrom:dd.MM.yyyy} - {_dateTo:dd.MM.yyyy}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await InitializeScopeAsync())
+            return;
+
+        ResetToDefaultRange();
+        await LoadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/work-time-statistics.js");
+        }
+
+        if (_module is not null && _chartDirty && !_loading)
+        {
+            await RenderChartAsync();
+            _chartDirty = false;
+        }
+    }
+
+    private async Task<bool> InitializeScopeAsync()
+    {
+        var roleId = await RoleStore.GetRoleIdAsync();
+
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == EmployeeRoleId)
+        {
+            var employeeProfile = await MembersVm.GetMyProfileAsync();
+            if (employeeProfile?.Team is not null)
+            {
+                Nav.NavigateTo($"/workplace/projects/{employeeProfile.Team.ProjectId}/teams/{employeeProfile.Team.TeamId}/tasks", forceLoad: true);
+                return false;
+            }
+
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == OwnerRoleId)
+        {
+            _projects = await ProjectsVm.GetAllAsync();
+            _showOwnerFilters = true;
+            _scopeLabel = "Вся организация";
+            _subtitle = "Тенденция рабочего времени сотрудников по дням за выбранный период.";
+            return true;
+        }
+
+        var profile = await MembersVm.GetMyProfileAsync();
+        if (profile?.Team is null)
+        {
+            Nav.NavigateTo("/workplace", forceLoad: true);
+            return false;
+        }
+
+        if (roleId == TeamLeadRoleId)
+        {
+            _teamScopeId = profile.Team.TeamId;
+            _scopeLabel = $"Команда #{profile.Team.TeamId}";
+            _subtitle = "Статистика времени сотрудников вашей команды.";
+            return true;
+        }
+
+        _scopeLabel = "Вся организация";
+        return true;
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _alert = null;
+
+        try
+        {
+            _items = (await LoadItemsByScopeAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            _alert = ex.Message;
+            _items = new();
+        }
+        finally
+        {
+            _loading = false;
+            _chartDirty = true;
+        }
+    }
+
+    private async Task<IReadOnlyList<WorkSessionHistoryDto>> LoadItemsByScopeAsync()
+    {
+        if (_teamScopeId.HasValue)
+            return await WorkSessionVm.GetTeamCompletedSessionsAsync(_teamScopeId.Value);
+
+        if (int.TryParse(_selectedTeamId, out var selectedTeamId))
+            return await WorkSessionVm.GetTeamCompletedSessionsAsync(selectedTeamId);
+
+        if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+            return await WorkSessionVm.GetProjectCompletedSessionsAsync(selectedProjectId);
+
+        return await WorkSessionVm.GetCompletedSessionsAsync();
+    }
+
+    private async Task RenderChartAsync()
+    {
+        if (_module is null)
+            return;
+
+        var points = DailyStats;
+        await _module.InvokeVoidAsync("renderWorkTimeStatistics", new
+        {
+            canvasId = "work-time-chart",
+            labels = points.Select(x => x.Date.ToString("dd.MM", RuCulture)).ToArray(),
+            values = points.Select(x => x.TotalHours).ToArray(),
+            sessions = points.Select(x => x.SessionCount).ToArray(),
+            from = _dateFrom.ToString("dd.MM.yyyy"),
+            to = _dateTo.ToString("dd.MM.yyyy")
+        });
+    }
+
+    private void ApplyPreset(int days)
+    {
+        _dateTo = DateOnly.FromDateTime(DateTime.Today);
+        _dateFrom = _dateTo.AddDays(-(days - 1));
+        MarkChartDirty();
+    }
+
+    private void ResetToDefaultRange()
+    {
+        ApplyPreset(30);
+    }
+
+    private bool IsPresetActive(int days)
+    {
+        var expectedTo = DateOnly.FromDateTime(DateTime.Today);
+        var expectedFrom = expectedTo.AddDays(-(days - 1));
+        return _dateFrom == expectedFrom && _dateTo == expectedTo;
+    }
+
+    private async Task ResetFiltersAsync()
+    {
+        ApplyPreset(30);
+
+        var shouldReload = _showOwnerFilters && (!string.IsNullOrEmpty(_selectedProjectId) || !string.IsNullOrEmpty(_selectedTeamId));
+
+        _selectedProjectId = string.Empty;
+        _selectedTeamId = string.Empty;
+        _ownerTeams = [];
+        _scopeLabel = _teamScopeId.HasValue ? $"Команда #{_teamScopeId.Value}" : "Вся организация";
+
+        if (shouldReload)
+            await LoadAsync();
+    }
+
+    private async Task OnProjectFilterChanged(ChangeEventArgs args)
+    {
+        _selectedProjectId = args.Value?.ToString() ?? string.Empty;
+        _selectedTeamId = string.Empty;
+        _ownerTeams = [];
+        _scopeLabel = "Вся организация";
+
+        if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+        {
+            _ownerTeams = await TeamsVm.GetByProjectAsync(selectedProjectId);
+            _scopeLabel = $"Проект #{selectedProjectId}";
+        }
+
+        await LoadAsync();
+    }
+
+    private async Task OnTeamFilterChanged(ChangeEventArgs args)
+    {
+        _selectedTeamId = args.Value?.ToString() ?? string.Empty;
+        if (int.TryParse(_selectedTeamId, out var selectedTeamId))
+        {
+            _scopeLabel = $"Команда #{selectedTeamId}";
+        }
+        else if (int.TryParse(_selectedProjectId, out var selectedProjectId))
+        {
+            _scopeLabel = $"Проект #{selectedProjectId}";
+        }
+        else
+        {
+            _scopeLabel = "Вся организация";
+        }
+
+        await LoadAsync();
+    }
+
+    private void OnDateFromChanged(ChangeEventArgs args)
+    {
+        if (DateOnly.TryParse(args.Value?.ToString(), out var value))
+            _dateFrom = value;
+
+        NormalizeRange();
+        MarkChartDirty();
+    }
+
+    private void OnDateToChanged(ChangeEventArgs args)
+    {
+        if (DateOnly.TryParse(args.Value?.ToString(), out var value))
+            _dateTo = value;
+
+        NormalizeRange();
+        MarkChartDirty();
+    }
+
+    private void NormalizeRange()
+    {
+        if (_dateFrom > _dateTo)
+            (_dateFrom, _dateTo) = (_dateTo, _dateFrom);
+    }
+
+    private void MarkChartDirty()
+    {
+        _chartDirty = true;
+    }
+
+    private List<WorkSessionHistoryDto> BuildFilteredSessions()
+    {
+        if (_dateFrom > _dateTo)
+            return [];
+
+        return _items
+            .Where(x => x.EndedAtUtc.HasValue)
+            .Where(x =>
+            {
+                var date = DateOnly.FromDateTime(x.EndedAtUtc!.Value.ToLocalTime());
+                return date >= _dateFrom && date <= _dateTo;
+            })
+            .OrderByDescending(x => x.EndedAtUtc)
+            .ToList();
+    }
+
+    private List<DailyWorkPoint> BuildDailyStats()
+    {
+        if (_dateFrom > _dateTo)
+            return [];
+
+        var grouped = FilteredSessions
+            .Select(x => new
+            {
+                Item = x,
+                Date = DateOnly.FromDateTime(x.EndedAtUtc!.Value.ToLocalTime())
+            })
+            .GroupBy(x => x.Date)
+            .ToDictionary(
+                g => g.Key,
+                g => new DailyWorkPoint(
+                    g.Key,
+                    Math.Round(g.Sum(x => Math.Max(0, x.Item.DurationSeconds)) / 3600d, 2),
+                    g.Count()));
+
+        var result = new List<DailyWorkPoint>();
+        for (var day = _dateFrom; day <= _dateTo; day = day.AddDays(1))
+        {
+            result.Add(grouped.TryGetValue(day, out var stat)
+                ? stat
+                : new DailyWorkPoint(day, 0, 0));
+        }
+
+        return result;
+    }
+
+    private async Task ExportTopDaysAsync()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("\uFEFFМесто,Дата,День недели,Часы,Сессии");
+
+        foreach (var day in TopDays)
+        {
+            sb.Append(EscapeCsv(day.Rank.ToString())).Append(',')
+                .Append(EscapeCsv(day.Date.ToString("dd.MM.yyyy"))).Append(',')
+                .Append(EscapeCsv(day.Date.ToString("dddd", RuCulture))).Append(',')
+                .Append(EscapeCsv(day.TotalHours.ToString("0.##", RuCulture))).Append(',')
+                .Append(EscapeCsv(day.SessionCount.ToString())).AppendLine();
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"work-time-top10_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "text/csv;charset=utf-8", base64);
+    }
+
+    private async Task ExportAllSessionsAsync()
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("\uFEFFДата завершения,Пользователь,Статус,Длительность,Сессия ID,Пользователь ID");
+
+        foreach (var session in FilteredSessions)
+        {
+            sb.Append(EscapeCsv(session.EndedAtUtc?.ToLocalTime().ToString("dd.MM.yyyy HH:mm") ?? "—")).Append(',')
+                .Append(EscapeCsv(session.UserName)).Append(',')
+                .Append(EscapeCsv(GetStatusLabel(session.Status))).Append(',')
+                .Append(EscapeCsv(FormatDuration(session.DurationSeconds))).Append(',')
+                .Append(EscapeCsv(session.SessionId.ToString())).Append(',')
+                .Append(EscapeCsv(session.UserId.ToString())).AppendLine();
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"work-sessions_{_dateFrom:yyyyMMdd}_{_dateTo:yyyyMMdd}.csv";
+        await JS.InvokeVoidAsync("steptreckDownload.saveFile", fileName, "text/csv;charset=utf-8", base64);
+    }
+
+    private static string EscapeCsv(string? value)
+    {
+        var text = value ?? string.Empty;
+        if (text.Contains('"'))
+            text = text.Replace("\"", "\"\"");
+
+        return $"\"{text}\"";
+    }
+
+    private static string GetStatusLabel(int status)
+    {
+        return status switch
+        {
+            1 => "В работе",
+            2 => "Пауза",
+            3 => "Завершена",
+            _ => "Неактивна"
+        };
+    }
+
+    private static string FormatDuration(int seconds)
+    {
+        var duration = TimeSpan.FromSeconds(Math.Max(0, seconds));
+        return $"{(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+            return;
+
+        await _module.InvokeVoidAsync("disposeWorkTimeStatistics", "work-time-chart");
+        await _module.DisposeAsync();
+    }
+
+    private sealed record DailyWorkPoint(DateOnly Date, double TotalHours, int SessionCount);
+    private sealed record TopDayRow(int Rank, DateOnly Date, double TotalHours, int SessionCount);
+}

@@ -1,0 +1,217 @@
+﻿@page "/register"
+@using steptreck.Domain.DTOs.AuthDTOs
+@inject steptreck.Web.ViewModel.RegisterViewModel Vm
+@inject steptreck.Web.ViewModel.AuthViewModel AuthVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+
+<PageTitle>Регистрация — StepTreck</PageTitle>
+
+<main class="page register">
+    <section class="auth card">
+        <div class="auth-head">
+            <div class="brand" @onclick="@(() => Nav.NavigateTo("/"))" role="button" tabindex="0">
+                <img class="brand-logo" src="/icon.png" alt="StepTreck" />
+                <span>StepTreck</span>
+            </div>
+            <div class="reg-switcher">
+                <a class="reg-link active" href="/register">Для команд</a>
+                <a class="reg-link" href="/register/user">Для участников</a>
+            </div>
+            <h1>Регистрация</h1>
+            <p>Организация + владелец</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_alertText))
+        {
+            <div class="alert @(_alertKind)">
+                <div class="a-text">@_alertText</div>
+            </div>
+        }
+
+        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="vsummary" />
+
+            <div class="form-grid">
+                <div class="field span-2">
+                    <label class="label">Организация</label>
+                    <InputText class="input" @bind-Value="_model.OrgName" placeholder="Название" />
+                </div>
+
+                <div class="field">
+                    <label class="label">Фамилия</label>
+                    <InputText class="input" @bind-Value="_model.Surname" placeholder="Фамилия" />
+                </div>
+
+                <div class="field">
+                    <label class="label">Имя</label>
+                    <InputText class="input" @bind-Value="_model.Name" placeholder="Имя" />
+                </div>
+
+                <div class="field span-2">
+                    <label class="label">Отчество</label>
+                    <InputText class="input" @bind-Value="_model.Patronymic" placeholder="Необязательно" />
+                </div>
+
+                <div class="field span-2">
+                    <label class="label">Email</label>
+                    <InputText class="input" @bind-Value="_model.Email" placeholder="name@company.com" />
+                </div>
+
+                <div class="field">
+                    <label class="label">Пароль</label>
+                    <div class="input-with-btn">
+                        <InputText class="input"
+                                   type="@(_showPass ? "text" : "password")"
+                                   @bind-Value="_model.Password"
+                                   placeholder="••••••••" />
+                        <button type="button" class="icon-btn" @onclick="TogglePassword" aria-label="Показать пароль">
+                            @if (_showPass)
+                            {
+                                <span>Скрыть</span>
+                            }
+                            else
+                            {
+                                <span>Показать</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label class="label">Подтверждение</label>
+                    <InputText class="input"
+                               type="@(_showPass ? "text" : "password")"
+                               @bind-Value="_model.Confirm"
+                               placeholder="••••••••" />
+                </div>
+
+                <div class="field span-2">
+                    <label class="check">
+                        <input type="checkbox" @bind="_agreePrivacy" />
+                        <span class="box"></span>
+                        <span>Согласен с <a href="/doc/%D0%9F%D0%9E%D0%9B%D0%98%D0%A2%D0%98%D0%9A%D0%90%20%D0%9A%D0%9E%D0%9D%D0%A4%D0%98%D0%94%D0%95%D0%9D%D0%A6%D0%98%D0%90%D0%9B%D0%AC%D0%9D%D0%9E%D0%A1%D0%A2%D0%98.pdf" download>политикой конфиденциальности</a></span>
+                    </label>
+                </div>
+                <div class="field span-2">
+                    <label class="check">
+                        <input type="checkbox" @bind="_agreePersonal" />
+                        <span class="box"></span>
+                        <span>Согласен с <a href="/doc/%D0%9F%D0%9E%D0%9B%D0%AC%D0%97%D0%9E%D0%92%D0%90%D0%A2%D0%95%D0%9B%D0%AC%D0%A1%D0%9A%D0%9E%D0%95%20%D0%A1%D0%9E%D0%93%D0%9B%D0%90%D0%A8%D0%95%D0%9D%D0%98%D0%95.pdf" download>пользовательским соглашением</a> и обработкой персональных данных</span>
+                    </label>
+                </div>
+                <div class="field span-2">
+                    <TurnstileCaptcha @ref="_captcha"
+                                      SiteKey="@TurnstileSiteKey"
+                                      TokenChanged="@(token => _model.CaptchaToken = token)" />
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn primary" type="submit" disabled="@(!_agreePrivacy || !_agreePersonal || _busy || string.IsNullOrWhiteSpace(_model.CaptchaToken))">
+                    @if (_busy)
+                    {
+                        <span>Создаём...</span>
+                    }
+                    else
+                    {
+                        <span>Создать</span>
+                    }
+                </button>
+                <a class="btn ghost" href="/login">Войти</a>
+            </div>
+
+            <div class="back-link">
+                <a class="muted-link" href="/">← На главную</a>
+            </div>
+        </EditForm>
+    </section>
+</main>
+
+@code {
+    private RegisterOrgDTO _model = new()
+    {
+        Email = "",
+        Password = "",
+        Confirm = "",
+        OrgName = "",
+        Surname = "",
+        Name = "",
+        Patronymic = null
+    };
+
+    private bool _busy;
+    private bool _agreePrivacy;
+    private bool _agreePersonal;
+    private bool _showPass;
+    private TurnstileCaptcha? _captcha;
+
+    private string? _alertText;
+    private string _alertKind = "err";
+    private string? TurnstileSiteKey => Configuration["Turnstile:SiteKey"] ?? Configuration["Turnstile:SecretKey"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await JwtService.GetTokenAsync();
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+        }
+    }
+
+    private void TogglePassword() => _showPass = !_showPass;
+
+    private async Task SubmitAsync()
+    {
+        _alertText = null;
+        _alertKind = "err";
+
+        if (_model.Password != _model.Confirm)
+        {
+            _alertText = "Пароли не совпадают.";
+            return;
+        }
+
+        if (!_agreePrivacy || !_agreePersonal)
+        {
+            _alertText = "Нужно принять условия и политику.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.CaptchaToken))
+        {
+            _alertText = "Подтвердите, что вы не робот.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var res = await Vm.RegisterOrganizationAsync(_model);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alertText = res.Message ?? "Готово.";
+                Nav.NavigateTo("/login");
+            }
+            else
+            {
+                _alertText = res.Error ?? res.Message ?? "Ошибка регистрации.";
+            }
+        }
+        catch
+        {
+            _alertText = "Ошибка сети или сервера.";
+        }
+        finally
+        {
+            if (_captcha is not null)
+                await _captcha.ResetAsync();
+
+            _busy = false;
+        }
+    }
+}
+
+

@@ -1,0 +1,40 @@
+@inject NavigationManager Nav
+
+<nav class="project-tabs" aria-label="Разделы проекта">
+    <button class="@TabClass("info")" type="button" @onclick="@(() => NavigateTo("info"))">Проект</button>
+    <button class="@TabClass("dashboard")" type="button" @onclick="@(() => NavigateTo("dashboard"))">Дашборд</button>
+    <button class="@TabClass("teams")" type="button" @onclick="@(() => NavigateTo("teams"))">Команды</button>
+    <button class="@TabClass("members")" type="button" @onclick="@(() => NavigateTo("members"))">Участники</button>
+    <button class="@TabClass("files")" type="button" @onclick="@(() => NavigateTo("files"))">Файлы</button>
+    <button class="@TabClass("audit")" type="button" @onclick="@(() => NavigateTo("audit"))">Журнал</button>
+</nav>
+
+@code {
+    [Parameter]
+    public int ProjectId { get; set; }
+
+    [Parameter]
+    public string Active { get; set; } = "info";
+
+    private string BasePath => $"/workplace/projects/{ProjectId}";
+
+    private string TabClass(string tab)
+        => string.Equals(Active, tab, StringComparison.OrdinalIgnoreCase)
+            ? "project-tab active"
+            : "project-tab";
+
+    private void NavigateTo(string tab)
+    {
+        var url = tab switch
+        {
+            "dashboard" => $"{BasePath}/dashboard",
+            "teams" => $"{BasePath}/teams",
+            "members" => $"{BasePath}/members",
+            "files" => $"{BasePath}/files",
+            "audit" => $"{BasePath}/audit",
+            _ => BasePath
+        };
+
+        Nav.NavigateTo(url);
+    }
+}

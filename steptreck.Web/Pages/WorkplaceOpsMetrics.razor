@@ -1,0 +1,367 @@
+﻿@page "/workplace/metrics"
+@layout steptreck.Web.Layout.WorkplaceLayout
+@inject IJSRuntime JS
+@inject IConfiguration Config
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+@using System.Text
+@using System.Text.Json
+@implements IAsyncDisposable
+
+@if (!_roleChecked)
+{
+    <main class="page ops-page">
+        <section class="ops-hero card">
+            <div class="ops-hero-left">
+                <div class="ops-kicker">Ops наблюдение</div>
+                <h1>Проверяем доступ...</h1>
+            </div>
+        </section>
+    </main>
+}
+else if (!_allowAccess)
+{
+    <main class="page ops-page">
+        <section class="ops-hero card">
+            <div class="ops-hero-left">
+                <div class="ops-kicker">Ops наблюдение</div>
+                <h1>Нет доступа</h1>
+                <p>Эта страница доступна только администратору.</p>
+            </div>
+        </section>
+    </main>
+}
+else
+{
+<main class="page ops-page">
+    <section class="ops-hero card">
+        <div class="ops-hero-left">
+            <div class="ops-kicker">Ops наблюдение</div>
+            <h1>Метрики прод-окружения</h1>
+            <p>Реальное поведение API: скорость, задержки и ошибки. Данные  обновляются каждые 15 секунд.</p>
+            <div class="ops-stats">
+                <div class="ops-stat-card">
+                    <span>RPS</span>
+                    <strong data-ops-kpi="rps">—</strong>
+                </div>
+                <div class="ops-stat-card">
+                    <span>P95</span>
+                    <strong data-ops-kpi="p95">—</strong>
+                </div>
+                <div class="ops-stat-card">
+                    <span>5xx</span>
+                    <strong data-ops-kpi="5xx" data-ops-tone>—</strong>
+                </div>
+                <div class="ops-stat-card">
+                    <span>CPU</span>
+                    <strong data-ops-kpi="cpu">—</strong>
+                </div>
+                <div class="ops-stat-card">
+                    <span>RAM</span>
+                    <strong data-ops-kpi="ram">—</strong>
+                </div>
+                <div class="ops-stat-card">
+                    <span>Active</span>
+                    <strong data-ops-kpi="active">—</strong>
+                </div>
+            </div>
+        </div>
+        <div class="ops-hero-right">
+            <div class="ops-range" aria-label="Интервал времени">
+                <button class="@RangeClass(15)" type="button" aria-pressed="@(_minutes == 15)" @onclick="() => SetRange(15)">15 минут</button>
+                <button class="@RangeClass(60)" type="button" aria-pressed="@(_minutes == 60)" @onclick="() => SetRange(60)">1 час</button>
+                <button class="@RangeClass(360)" type="button" aria-pressed="@(_minutes == 360)" @onclick="() => SetRange(360)">6 часов</button>
+                <button class="@RangeClass(1440)" type="button" aria-pressed="@(_minutes == 1440)" @onclick="() => SetRange(1440)">24 часа</button>
+            </div>
+            <button class="btn primary" @onclick="Reload">Обновить</button>
+            <div class="ops-update">
+                <span data-ops-status>Загружаем данные...</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="ops-grid">
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">Запросы в секунду</div>
+                    <div class="ops-chart-subtitle">Сколько запросов в среднем обрабатывает API</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="rps">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="rps">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-rps"></canvas>
+            </div>
+        </article>
+
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">P95 задержки</div>
+                    <div class="ops-chart-subtitle">95% запросов укладываются в этот лимит</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="p95">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="p95">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-p95"></canvas>
+            </div>
+        </article>
+
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">Ошибки 5xx</div>
+                    <div class="ops-chart-subtitle">Ошибки сервера за выбранный период</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="5xx">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="5xx">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-5xx"></canvas>
+            </div>
+        </article>
+
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">CPU</div>
+                    <div class="ops-chart-subtitle">Нагрузка на процессор сервера</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="cpu">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="cpu">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-cpu"></canvas>
+            </div>
+        </article>
+
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">RAM</div>
+                    <div class="ops-chart-subtitle">Потребление оперативной памяти</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="ram">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="ram">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-ram"></canvas>
+            </div>
+        </article>
+
+        <article class="ops-chart card">
+            <div class="ops-chart-head">
+                <div>
+                    <div class="ops-chart-title">Активные запросы</div>
+                    <div class="ops-chart-subtitle">Сколько запросов обрабатывается прямо сейчас</div>
+                </div>
+                <div class="ops-chart-actions">
+                    <div class="ops-chart-kpi"><span data-ops-kpi="active">—</span></div>
+                    <button class="btn ghost btn-compact" type="button" data-ops-download="active">Скачать</button>
+                </div>
+            </div>
+            <div class="ops-chart-canvas">
+                <canvas id="chart-active"></canvas>
+            </div>
+        </article>
+    </section>
+
+    <section class="ops-foot card">
+        <div class="ops-foot-left">
+            <div class="ops-foot-title">Состояние инфраструктуры</div>
+        </div>
+        <div class="ops-foot-right">
+            <div class="ops-foot-chip">
+                <span>Интервал</span>
+                <strong data-ops-range>@RangeLabel(_minutes)</strong>
+            </div>
+        </div>
+    </section>
+</main>
+}
+
+@code {
+    private IJSObjectReference? _module;
+    private int _minutes = 60;
+    private const int AdminRoleId = 5;
+    private bool _roleChecked;
+    private bool _allowAccess;
+    private string? _token;
+    private string? _jsError;
+    private bool _jsInited;
+
+    private string ApiBase
+    {
+        get
+        {
+            var configured = Config["Api:BaseUrl"];
+            if (!string.IsNullOrWhiteSpace(configured))
+                return configured.TrimEnd('/') + "/";
+
+            return Nav.BaseUri.TrimEnd('/') + "/";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _token = await JwtService.GetTokenAsync();
+        _allowAccess = await RoleAccess.IsAdminAsync();
+        _roleChecked = true;
+
+        if (!_allowAccess)
+        {
+            Nav.NavigateTo("/workplace", replace: true);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_jsInited || !_allowAccess)
+            return;
+
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "/js/ops-metrics.js");
+            await _module.InvokeVoidAsync("initOpsMetrics", new
+            {
+                apiBase = ApiBase,
+                minutes = _minutes,
+                updateMs = 15000,
+                token = _token
+            });
+
+            _jsInited = true;
+        }
+        catch (Exception ex)
+        {
+            _jsError = ex.ToString();
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task SetRange(int minutes)
+    {
+        _minutes = minutes;
+        if (_module is not null)
+            await _module.InvokeVoidAsync("setRange", minutes);
+    }
+
+    private async Task Reload()
+    {
+        if (_module is not null)
+            await _module.InvokeVoidAsync("refreshNow");
+    }
+
+    private string RangeClass(int minutes)
+    {
+        return _minutes == minutes ? "range-chip active" : "range-chip";
+    }
+
+    private static string RangeLabel(int minutes)
+    {
+        return minutes switch
+        {
+            >= 1440 => "24 часа",
+            >= 360 => "6 часов",
+            >= 60 => "1 час",
+            _ => "15 минут"
+        };
+    }
+
+    private static int? GetRoleIdFromJwt(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        try
+        {
+            var payloadJson = DecodeJwtPart(parts[1]);
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("role_id", out var roleIdEl))
+            {
+                if (roleIdEl.ValueKind == JsonValueKind.Number && roleIdEl.TryGetInt32(out var roleId))
+                    return roleId;
+                if (roleIdEl.ValueKind == JsonValueKind.String && int.TryParse(roleIdEl.GetString(), out roleId))
+                    return roleId;
+            }
+            var roleName = ReadRoleName(root);
+            if (!string.IsNullOrWhiteSpace(roleName) &&
+                string.Equals(roleName.Trim(), "admin", StringComparison.OrdinalIgnoreCase))
+            {
+                return AdminRoleId;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw; 
+        }
+
+
+        return null;
+    }
+
+    private static string? ReadRoleName(JsonElement root)
+    {
+        if (root.TryGetProperty("role", out var roleEl))
+            return ExtractRole(roleEl);
+
+        const string roleClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        if (root.TryGetProperty(roleClaim, out var claimEl))
+            return ExtractRole(claimEl);
+
+        return null;
+    }
+
+    private static string? ExtractRole(JsonElement roleEl)
+    {
+        return roleEl.ValueKind switch
+        {
+            JsonValueKind.String => roleEl.GetString(),
+            JsonValueKind.Array => roleEl.GetArrayLength() > 0 ? roleEl[0].GetString() : null,
+            _ => null
+        };
+    }
+
+    private static string DecodeJwtPart(string input)
+    {
+        var s = input.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+        }
+        var bytes = Convert.FromBase64String(s);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module is null)
+            return;
+
+        await _module.InvokeVoidAsync("disposeOpsMetrics");
+        await _module.DisposeAsync();
+    }
+}

@@ -1,0 +1,968 @@
+﻿@page "/workplace/tasks/{TaskId:int}"
+@using steptreck.Domain.DTOs.TaskDTOs
+@using steptreck.Domain.DTOs.TaskDTOs.CheckListDTOs
+@using steptreck.Domain.DTOs.MemberDTOs
+@inject steptreck.Web.ViewModel.TaskViewModel TasksVm
+@inject steptreck.Web.ViewModel.TaskCheckListViewModel CheckListVm
+@inject steptreck.Web.ViewModel.TaskFilesViewModel TaskFilesVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject IJSRuntime JS
+@layout steptreck.Web.Layout.WorkplaceLayout
+@using System.Text
+@using System.Text.Json
+
+<main class="page task-details-page">
+    <section class="section">
+        @if (_loading)
+        {
+            <div class="details-empty card">Загружаем задачу...</div>
+        }
+        else if (_task is null)
+        {
+            <div class="details-empty card">Задача не найдена.</div>
+        }
+        else
+        {
+            <div class="task-hero card">
+                <div class="task-hero-main">
+                    <div class="task-kicker">Задача #@_task.Id</div>
+                    <h1 class="task-title">@_task.Title</h1>
+                    <div class="task-badges">
+                        <span class="badge status @GetStatusClass(_task.Status)">@GetStatusLabel(_task.Status)</span>
+                        <span class="badge priority @GetPriorityClass(_task.Priority)">@GetPriorityLabel(_task.Priority)</span>
+                        <span class="badge deadline @GetDeadlineClass(_task.Deadline)">Дедлайн · @FormatDate(_task.Deadline)</span>
+                    </div>
+                </div>
+                @if (_isMyTask)
+                {
+                    <div class="task-actions">
+                        <button class="btn primary" type="button" @onclick="CompleteTaskAsync" disabled="@(!CanCompleteTask())">
+                            Завершить задачу
+                        </button>
+                        <button class="btn ghost" type="button" @onclick="CompleteNextChecklistAsync" disabled="@(!HasUndoneChecklist())">
+                            Следующий пункт
+                        </button>
+                        @if (_isTeamLead)
+                        {
+                            <button class="btn ghost" type="button" @onclick="OpenDeleteModal" disabled="@_busy">
+                                Удалить задачу
+                            </button>
+                        }
+                    </div>
+                }
+                else if (_isTeamLead)
+                {
+                    <div class="task-actions">
+                        <button class="btn ghost" type="button" @onclick="OpenDeleteModal" disabled="@_busy">
+                            Удалить задачу
+                        </button>
+                    </div>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(_alert))
+            {
+                <div class="alert @(_alertKind)">@_alert</div>
+            }
+
+            <div class="task-grid">
+                <div class="task-main card">
+                    <div class="task-tabs">
+                        <button class="tab-btn @GetTabClass("description")"
+                                type="button"
+                                @onclick="@(() => SetTab("description"))">
+                            Описание
+                        </button>
+
+                        <button class="tab-btn @GetTabClass("checklist")"
+                                type="button"
+                                @onclick="@(() => SetTab("checklist"))">
+                            Чек-лист
+                        </button>
+
+                        <button class="tab-btn @GetTabClass("files")"
+                                type="button"
+                                @onclick="@(() => SetTab("files"))">
+                            Файлы
+                        </button>
+                    </div>
+
+
+                    @if (_activeTab == "description")
+                    {
+                        <div class="task-section">
+                            <h2>Описание</h2>
+                            <div class="task-description">
+                                @if (!string.IsNullOrWhiteSpace(_task.Description))
+                                {
+                                    @_task.Description
+                                }
+                                else
+                                {
+                                    <span class="muted">Описание задачи не задано.</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (_activeTab == "checklist")
+                    {
+                        <div class="task-section">
+                            <div class="checklist-head">
+                                <h2>Чек-лист</h2>
+                                @if (!_editingChecklist && !_isEmployee)
+                                {
+                                    <button class="btn ghost" type="button" @onclick="StartChecklistEdit">Редактировать</button>
+                                }
+                                else if (!_isEmployee)
+                                {
+                                    <div class="checklist-actions">
+                                        <button class="btn primary" type="button" @onclick="SaveChecklistAsync" disabled="@_busy">Сохранить</button>
+                                        <button class="btn ghost" type="button" @onclick="CancelChecklistEdit" disabled="@_busy">Отмена</button>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (_task.Checklist.Count == 0)
+                            {
+                                <p class="muted">Пункты чек-листа отсутствуют.</p>
+                            }
+                            else
+                            {
+                                @if (_editingChecklist && !_isEmployee)
+                                {
+                                    <div class="checklist-editor">
+                                        @foreach (var row in _editChecklist)
+                                        {
+                                            <div class="checklist-row" @key="row.UiId">
+                                                <InputText class="input" @bind-Value="row.Title" />
+                                                <button type="button" class="btn ghost" @onclick="() => RemoveRow(row)">Удалить</button>
+                                            </div>
+                                        }
+
+                                        <button type="button" class="btn ghost" @onclick="AddRow">Добавить пункт</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <ul class="checklist">
+                                        @foreach (var item in _task.Checklist)
+                                        {
+                                            <li class="checklist-item @(item.IsDone ? "done" : "")">
+                                                <span class="checkmark">@((item.IsDone) ? "✓" : "✕")</span>
+                                                <div>
+                                                    <div class="check-title">@item.Title</div>
+                                                    <div class="check-meta">
+                                                        <span>Создано: @FormatDate(item.CreatedAt)</span>
+                                                        @if (item.CompletedAt.HasValue)
+                                                        {
+                                                            <span>Завершено: @FormatDate(item.CompletedAt)</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (_activeTab == "files")
+                    {
+                        <div class="task-section">
+                            <div class="files-head">
+                                <h2>Файлы задачи</h2>
+                                <p class="muted">Загружайте материалы. Все изменения фиксируются в истории.</p>
+                            </div>
+
+                            <div class="file-uploader">
+                                <label class="dropzone">
+                                    <InputFile OnChange="OnTaskFileSelected" />
+                                    <div class="drop-title">Перетащите файл сюда</div>
+                                    <div class="drop-hint">или нажмите, чтобы выбрать</div>
+                                </label>
+                                <div class="file-upload-actions">
+                                    <div class="file-selected">@(_taskFile is null ? "Файл не выбран" : _taskFile.Name)</div>
+                                    <button class="btn primary" type="button" @onclick="UploadTaskFileAsync" disabled="@_filesBusy">Загрузить файл</button>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(_filesStatus))
+                            {
+                                <div class="alert @(_filesOk ? "ok" : "err")">@_filesStatus</div>
+                            }
+
+                            @if (_files.Count == 0)
+                            {
+                                <p class="muted">Файлы отсутствуют.</p>
+                            }
+                            else
+                            {
+                                <div class="files-grid">
+                                    @foreach (var f in _files)
+                                    {
+                                        <div class="file-card">
+                                            <div class="file-name">@f.FileName</div>
+                                            <div class="file-meta">
+                                                <span>@FormatBytes(f.SizeBytes)</span>
+                                                <span>@FormatDate(f.CreatedAt)</span>
+                                            </div>
+                                            <div class="file-buttons">
+                                                <button class="btn ghost" type="button" @onclick="() => DownloadTaskFileAsync(f.Id)" disabled="@_filesBusy">Скачать</button>
+                                                <button class="btn ghost" type="button" @onclick="() => OpenDeleteFileModal(f)" disabled="@_filesBusy">Удалить</button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <aside class="task-meta card">
+                    <div class="meta-block">
+                        <span class="meta-label">Исполнитель</span>
+                        <span class="meta-value">@(_task.AssignedTo ?? "Не назначено")</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="meta-label">Автор</span>
+                        <span class="meta-value">@_task.CreatedBy</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="meta-label">Создана</span>
+                        <span class="meta-value">@FormatDate(_task.CreatedAt)</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="meta-label">Статус</span>
+                        <span class="meta-value badge status @GetStatusClass(_task.Status)">@GetStatusLabel(_task.Status)</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="meta-label">Приоритет</span>
+                        <span class="meta-value badge priority @GetPriorityClass(_task.Priority)">@GetPriorityLabel(_task.Priority)</span>
+                    </div>
+                    <div class="meta-block">
+                        <span class="meta-label">Дедлайн</span>
+                        @if (_isEmployee)
+                        {
+                            <span class="meta-value">@FormatDate(_deadlineEdit)</span>
+                        }
+                        else if (!_editingDeadline)
+                        {
+                            <div class="meta-inline">
+                                <span class="meta-value">@FormatDate(_deadlineEdit)</span>
+                                <button class="btn ghost" type="button" @onclick="StartDeadlineEdit">Изменить</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="deadline-edit">
+                                <InputDate class="input" @bind-Value="_deadlineEdit" @attributes="GetDeadlineAttributes()" />
+                                <button class="btn primary" type="button" @onclick="SaveDeadlineAsync" disabled="@_busy">Сохранить</button>
+                                <button class="btn ghost" type="button" @onclick="CancelDeadlineEdit" disabled="@_busy">Отмена</button>
+                            </div>
+                        }
+                    </div>
+                </aside>
+            </div>
+        }
+    </section>
+</main>
+
+@if (_showDeleteModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="delete-task-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="delete-task-title">Удалить задачу?</h2>
+                        <p>Вы уверены, что хотите удалить задачу «@_task?.Title»? Это действие нельзя отменить.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteModal" disabled="@_busy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteTaskAsync" disabled="@_busy">Удалить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showDeleteFileModal)
+{
+    <div class="modal-backdrop" @onclick="CloseDeleteFileModal">
+        <div class="modal card delete-confirm" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="delete-task-file-title">
+            <div class="delete-confirm-head">
+                <div class="delete-confirm-title-wrap">
+                    <span class="delete-confirm-icon"><i class="bi bi-trash3" aria-hidden="true"></i></span>
+                    <div>
+                        <h2 id="delete-task-file-title">Удалить файл?</h2>
+                        <p>Вы уверены, что хотите удалить файл «@_deleteFileName»? Это действие нельзя отменить.</p>
+                    </div>
+                </div>
+                <button class="delete-confirm-close" type="button" @onclick="CloseDeleteFileModal" aria-label="Закрыть окно"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+
+            <div class="delete-confirm-actions">
+                <button class="btn ghost" type="button" @onclick="CloseDeleteFileModal" disabled="@_filesBusy">Отмена</button>
+                <button class="btn danger" type="button" @onclick="DeleteTaskFileAsync" disabled="@_filesBusy">Удалить</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int TaskId { get; set; }
+
+    private TaskReadDto? _task;
+    private MemberProfileDto? _me;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _isMyTask;
+    private bool _isEmployee;
+    private bool _isTeamLead;
+    private bool _showDeleteModal;
+    private bool _showDeleteFileModal;
+    private bool _editingChecklist;
+    private bool _editingDeadline;
+    private string _activeTab = "description";
+    private string? _alert;
+    private string _alertKind = "ok";
+    private readonly List<ChecklistUpsertDto> _editChecklist = new();
+    private DateTime? _deadlineEdit;
+    private readonly List<steptreck.Domain.DTOs.TeamDTOs.TeamFileReadDto> _files = new();
+    private IBrowserFile? _taskFile;
+    private bool _filesBusy;
+    private string? _filesStatus;
+    private bool _filesOk;
+    private int? _deleteFileId;
+    private string? _deleteFileName;
+    private const long MaxFileSizeBytes = 5 * 1024 * 1024;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+    private const int OwnerRoleId = 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        var roleId = await RoleStore.GetRoleIdAsync();
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+        if (!roleId.HasValue)
+        {
+            var token = await JwtService.GetTokenAsync();
+            roleId = GetRoleIdFromJwt(token);
+        }
+        _isEmployee = roleId == EmployeeRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        if (roleId == OwnerRoleId)
+        {
+            Nav.NavigateTo("/workplace/owner-dashboard", forceLoad: true);
+            return;
+        }
+        _me = await MembersVm.GetMyProfileAsync();
+        _task = await TasksVm.GetByIdAsync<TaskReadDto>(TaskId);
+        _files.Clear();
+        _files.AddRange(await TaskFilesVm.GetFilesAsync(TaskId));
+        if (_task is not null)
+        {
+            _deadlineEdit = _task.Deadline;
+            _isMyTask = IsMyTask(_task, _me);
+            _editingDeadline = false;
+            if (_editingChecklist)
+                BuildEditChecklist();
+        }
+        _loading = false;
+    }
+
+    private static bool IsMyTask(TaskReadDto task, MemberProfileDto? me)
+    {
+        if (me is null || string.IsNullOrWhiteSpace(task.AssignedTo))
+            return false;
+
+        var assigned = NormalizeName(task.AssignedTo);
+        var mine = NormalizeName(me.FullName);
+        return string.Equals(assigned, mine, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeName(string value)
+    {
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return string.Join(" ", parts);
+    }
+
+    private bool HasUndoneChecklist()
+        => _task is not null && _task.Checklist.Any(i => !i.IsDone);
+
+    private bool CanCompleteTask()
+    {
+        if (_task is null)
+            return false;
+        if (string.Equals(_task.Status, "Done", StringComparison.OrdinalIgnoreCase))
+            return false;
+        return !_task.Checklist.Any(i => !i.IsDone);
+    }
+
+    private async Task CompleteNextChecklistAsync()
+    {
+        if (_task is null || _busy || !_isMyTask)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await CheckListVm.CompleteNextAsync(_task.Id);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Следующий пункт выполнен.";
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось выполнить пункт.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CompleteTaskAsync()
+    {
+        if (_task is null || _busy || !_isMyTask)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var res = await TasksVm.CompleteAsync(_task.Id);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Задача завершена.";
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось завершить задачу.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void OpenDeleteModal()
+    {
+        if (!_isTeamLead || _task is null)
+            return;
+
+        _alert = null;
+        _alertKind = "ok";
+        _showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        _showDeleteModal = false;
+    }
+
+    private async Task DeleteTaskAsync()
+    {
+        if (_task is null || _busy || !_isTeamLead)
+            return;
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var projectId = _task.ProjectId;
+            var teamId = _task.TeamId;
+            var res = await TasksVm.DeleteAsync(_task.Id);
+            if (res.Success)
+            {
+                _showDeleteModal = false;
+                if (teamId.HasValue)
+                    Nav.NavigateTo($"/workplace/projects/{projectId}/teams/{teamId.Value}/tasks");
+                else
+                    Nav.NavigateTo("/workplace");
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = "Не удалось удалить задачу.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void StartDeadlineEdit()
+    {
+        if (_isEmployee)
+            return;
+
+        _editingDeadline = true;
+    }
+
+    private void CancelDeadlineEdit()
+    {
+        _editingDeadline = false;
+        if (_task is not null)
+            _deadlineEdit = _task.Deadline;
+    }
+
+    private async Task SaveDeadlineAsync()
+    {
+        if (_isEmployee)
+            return;
+
+        if (_task is null || _busy)
+            return;
+
+        if (_deadlineEdit is null)
+        {
+            _alertKind = "err";
+            _alert = "Укажите дату дедлайна.";
+            return;
+        }
+
+        if (_deadlineEdit.Value.Date < DateTime.Today)
+        {
+            _alertKind = "err";
+            _alert = "Нельзя поставить дедлайн раньше сегодняшней даты.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var ok = await TasksVm.UpdateDeadLine(new PutDeadLineDto
+            {
+                TaskId = _task.Id,
+                Date = _deadlineEdit.Value
+            });
+
+            if (ok)
+            {
+                _alertKind = "ok";
+                _alert = "Дедлайн сохранён.";
+                _editingDeadline = false;
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = "Не удалось изменить дедлайн.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void StartChecklistEdit()
+    {
+        if (_isEmployee)
+            return;
+
+        if (_task is null)
+            return;
+
+        _editingChecklist = true;
+        BuildEditChecklist();
+    }
+
+    private void CancelChecklistEdit()
+    {
+        _editingChecklist = false;
+        _editChecklist.Clear();
+    }
+
+    private void BuildEditChecklist()
+    {
+        _editChecklist.Clear();
+        if (_task is null)
+            return;
+
+        foreach (var item in _task.Checklist)
+        {
+            _editChecklist.Add(new ChecklistUpsertDto
+            {
+                Id = item.Id,
+                Title = item.Title
+            });
+        }
+    }
+
+    private void AddRow()
+    {
+        _editChecklist.Add(new ChecklistUpsertDto { Title = "" });
+    }
+
+    private void RemoveRow(ChecklistUpsertDto row)
+    {
+        _editChecklist.Remove(row);
+    }
+
+    private async Task SaveChecklistAsync()
+    {
+        if (_task is null || _busy)
+            return;
+
+        if (_editChecklist.Any(i => string.IsNullOrWhiteSpace(i.Title)))
+        {
+            _alertKind = "err";
+            _alert = "Заполните все пункты или удалите пустые строки.";
+            return;
+        }
+
+        _busy = true;
+        _alert = null;
+        try
+        {
+            var dto = new SaveChecklistDto
+            {
+                TaskId = _task.Id,
+                Items = _editChecklist
+                    .Select(i => new ChecklistUpsertDto
+                    {
+                        Id = i.Id,
+                        Title = i.Title?.Trim()
+                    })
+                    .ToList()
+            };
+
+            var res = await CheckListVm.SaveChecklistAsync(dto);
+            if (res.Success)
+            {
+                _alertKind = "ok";
+                _alert = "Чек-лист сохранён.";
+                _editingChecklist = false;
+                await LoadAsync();
+            }
+            else
+            {
+                _alertKind = "err";
+                _alert = res.Error ?? "Не удалось сохранить чек-лист.";
+            }
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+    }
+
+    private string GetTabClass(string tab)
+        => _activeTab == tab ? "active" : string.Empty;
+
+    private static string FormatDate(DateTime? value)
+        => value.HasValue ? value.Value.ToString("dd.MM.yyyy") : "—";
+
+    private static string FormatBytes(long size)
+    {
+        if (size <= 0) return "0 Б";
+        string[] units = { "Б", "КБ", "МБ", "ГБ" };
+        var index = 0;
+        double val = size;
+        while (val >= 1024 && index < units.Length - 1)
+        {
+            val /= 1024;
+            index++;
+        }
+        return $"{val:0.#} {units[index]}";
+    }
+
+    private static string GetStatusLabel(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "К выполнению",
+            "inprogress" => "В работе",
+            "done" => "Готово",
+            "canceled" => "Отменено",
+            _ => string.IsNullOrWhiteSpace(status) ? "—" : status
+        };
+    }
+
+    private static string GetStatusClass(string? status)
+    {
+        return (status ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "todo" => "todo",
+            "inprogress" => "progress",
+            "done" => "done",
+            "canceled" => "canceled",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetPriorityLabel(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "Низкий",
+            "нормальный" or "normal" => "Нормальный",
+            "высокий" or "high" => "Высокий",
+            "критический" or "critical" => "Критический",
+            _ => string.IsNullOrWhiteSpace(priority) ? "—" : priority
+        };
+    }
+
+    private static string GetPriorityClass(string? priority)
+    {
+        return (priority ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "низкий" or "low" => "low",
+            "нормальный" or "normal" => "normal",
+            "высокий" or "high" => "high",
+            "критический" or "critical" => "critical",
+            _ => "neutral"
+        };
+    }
+
+    private static string GetDeadlineClass(DateTime? deadline)
+    {
+        if (!deadline.HasValue) return "neutral";
+        if (deadline.Value.Date < DateTime.Today) return "danger";
+        if (deadline.Value.Date <= DateTime.Today.AddDays(2)) return "warning";
+        return "neutral";
+    }
+
+    private static int? GetRoleIdFromJwt(string? token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        var parts = token.Split('.');
+        if (parts.Length < 2)
+            return null;
+
+        try
+        {
+            var payloadJson = DecodeJwtPart(parts[1]);
+            using var doc = JsonDocument.Parse(payloadJson);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("role_id", out var roleIdEl))
+            {
+                if (roleIdEl.ValueKind == JsonValueKind.Number && roleIdEl.TryGetInt32(out var roleId))
+                    return roleId;
+                if (roleIdEl.ValueKind == JsonValueKind.String && int.TryParse(roleIdEl.GetString(), out roleId))
+                    return roleId;
+            }
+
+            var roleName = ReadRoleName(root);
+            if (!string.IsNullOrWhiteSpace(roleName))
+            {
+                return roleName.Trim().ToLowerInvariant() switch
+                {
+                    "owner" => 1,
+                    "admin" => 5,
+                    "teamlead" => 3,
+                    "employee" => 4,
+                    _ => null
+                };
+            }
+        }
+        catch
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    private static string? ReadRoleName(JsonElement root)
+    {
+        if (root.TryGetProperty("role", out var roleEl))
+            return ExtractRole(roleEl);
+
+        const string roleClaim = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
+        if (root.TryGetProperty(roleClaim, out var claimEl))
+            return ExtractRole(claimEl);
+
+        return null;
+    }
+
+    private static string? ExtractRole(JsonElement roleEl)
+    {
+        return roleEl.ValueKind switch
+        {
+            JsonValueKind.String => roleEl.GetString(),
+            JsonValueKind.Array => roleEl.GetArrayLength() > 0 ? roleEl[0].GetString() : null,
+            _ => null
+        };
+    }
+
+    private static string DecodeJwtPart(string input)
+    {
+        var s = input.Replace('-', '+').Replace('_', '/');
+        switch (s.Length % 4)
+        {
+            case 2: s += "=="; break;
+            case 3: s += "="; break;
+        }
+        var bytes = Convert.FromBase64String(s);
+        return Encoding.UTF8.GetString(bytes);
+    }
+
+    private IReadOnlyDictionary<string, object> GetDeadlineAttributes()
+    {
+        return new Dictionary<string, object>
+        {
+            ["min"] = DateTime.Today.ToString("yyyy-MM-dd")
+        };
+    }
+
+    private void OnTaskFileSelected(InputFileChangeEventArgs e)
+    {
+        _taskFile = e.File;
+        if (_taskFile is not null && _taskFile.Size > MaxFileSizeBytes)
+        {
+            _filesOk = false;
+            _filesStatus = "Файл больше 5 МБ.";
+        }
+    }
+
+    private async Task UploadTaskFileAsync()
+    {
+        if (_taskFile is null)
+        {
+            _filesOk = false;
+            _filesStatus = "Выберите файл.";
+            return;
+        }
+
+        if (_taskFile.Size > MaxFileSizeBytes)
+        {
+            _filesOk = false;
+            _filesStatus = "Файл больше 5 МБ.";
+            return;
+        }
+
+        _filesBusy = true;
+        _filesStatus = null;
+
+        try
+        {
+            await using var stream = _taskFile.OpenReadStream(MaxFileSizeBytes);
+            var (result, file) = await TaskFilesVm.UploadAsync(TaskId, stream, _taskFile.Name, _taskFile.ContentType);
+            if (result.Success && file is not null)
+            {
+                _filesOk = true;
+                _filesStatus = "Файл загружен.";
+                _files.Insert(0, file);
+            }
+            else
+            {
+                _filesOk = false;
+                _filesStatus = "Не удалось загрузить файл.";
+            }
+        }
+        finally
+        {
+            _filesBusy = false;
+        }
+    }
+
+    private async Task DownloadTaskFileAsync(int attachmentId)
+    {
+        _filesBusy = true;
+        _filesStatus = null;
+        try
+        {
+            var (result, file) = await TaskFilesVm.DownloadAsync(attachmentId);
+            if (!result.Success || file is null)
+            {
+                _filesOk = false;
+                _filesStatus = "Не удалось скачать файл.";
+                return;
+            }
+
+            var base64 = Convert.ToBase64String(file.Content);
+            await JS.InvokeVoidAsync("steptreckDownload.saveFile", file.FileName, file.ContentType, base64);
+        }
+        finally
+        {
+            _filesBusy = false;
+        }
+    }
+
+    private void OpenDeleteFileModal(steptreck.Domain.DTOs.TeamDTOs.TeamFileReadDto file)
+    {
+        _deleteFileId = file.Id;
+        _deleteFileName = file.FileName;
+        _filesStatus = null;
+        _showDeleteFileModal = true;
+    }
+
+    private void CloseDeleteFileModal()
+    {
+        _showDeleteFileModal = false;
+        _deleteFileId = null;
+        _deleteFileName = null;
+    }
+
+    private async Task DeleteTaskFileAsync()
+    {
+        if (!_deleteFileId.HasValue)
+            return;
+
+        _filesBusy = true;
+        _filesStatus = null;
+        try
+        {
+            var attachmentId = _deleteFileId.Value;
+            var res = await TaskFilesVm.DeleteAsync(attachmentId);
+            if (res.Success)
+            {
+                _files.RemoveAll(f => f.Id == attachmentId);
+                _filesOk = true;
+                _filesStatus = "Файл удалён.";
+                CloseDeleteFileModal();
+            }
+            else
+            {
+                _filesOk = false;
+                _filesStatus = "Не удалось удалить файл.";
+            }
+        }
+        finally
+        {
+            _filesBusy = false;
+        }
+    }
+}

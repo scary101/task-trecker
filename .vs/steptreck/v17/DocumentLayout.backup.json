@@ -1,0 +1,1726 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\meloc\\source\\repos\\steptreck\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplacedatatools.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplacedatatools.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\viewmodel\\backupviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\viewmodel\\backupviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\database\\importexportcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\database\\importexportcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\viewmodel\\authviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\viewmodel\\authviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\viewmodel\\auditviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\viewmodel\\auditviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\layout\\workplacelayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\layout\\workplacelayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\auth\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\auth\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\models\\projectteammember.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\models\\projectteammember.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\tasks\\projecttaskchecklistcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\tasks\\projecttaskchecklistcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\members\\membercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\members\\membercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\members\\inviteservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\members\\inviteservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\infrastructure\\email\\emailhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\infrastructure\\email\\emailhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\invitations\\invitecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\invitations\\invitecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\nginx.conf||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\nginx.conf||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\wwwroot\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\wwwroot\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\models\\worksession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\models\\worksession.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\models\\member.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\models\\member.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\chat\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\chat\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\infrastructure\\secutiry\\tokenhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\infrastructure\\secutiry\\tokenhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\infrastructure\\secutiry\\invationtokenhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\infrastructure\\secutiry\\invationtokenhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\tasks\\taskcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\tasks\\taskcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\chat\\chatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\chat\\chatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\services\\chatclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\services\\chatclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\chat\\chatcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\chat\\chatcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplaceteamchat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplaceteamchat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\subscriptions\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\subscriptions\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\subscriptions\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\subscriptions\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplacesubscriptionmanage.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplacesubscriptionmanage.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\subscriptionsdtos\\currentsubscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\subscriptionsdtos\\currentsubscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\members\\memberservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\members\\memberservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\chatdtos\\chatmessagedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\chatdtos\\chatmessagedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\sessionwork\\worksessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\sessionwork\\worksessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\worksession\\worksessioncontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\worksession\\worksessioncontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\viewmodel\\worksessionviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\viewmodel\\worksessionviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\components\\projectsectiontabs.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\components\\projectsectiontabs.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\components\\scorecard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\components\\scorecard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplaceteamfiles.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplaceteamfiles.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\trecking\\opsmetricscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\trecking\\opsmetricscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\monitoting\\docker-compose.yml||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\monitoting\\docker-compose.yml||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\monitoting\\prometheus.yml||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\monitoting\\prometheus.yml||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\trecking\\auditcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\trecking\\auditcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\monitoring\\prometheusclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\monitoring\\prometheusclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\wwwroot\\js\\ops-metrics.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\wwwroot\\js\\ops-metrics.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplaceopsmetrics.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplaceopsmetrics.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\services\\invitetokenstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\services\\invitetokenstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\projects\\projectscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\projects\\projectscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\workuser\\avatarservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\workuser\\avatarservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\projects\\projectservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\projects\\projectservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\gate\\subscriptiongate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\gate\\subscriptiongate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplaceownerdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplaceownerdashboard.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\subscriptioncheckout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\subscriptioncheckout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\auth\\resetpasswordcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\auth\\resetpasswordcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\auth\\registercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\auth\\registercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\authdtos\\emaildto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\authdtos\\emaildto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\viewmodel\\resetpasswordviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\viewmodel\\resetpasswordviewmodel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\wwwroot\\appsettings.docker.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\wwwroot\\appsettings.docker.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\home.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\dockerfile||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\services\\roledisplayservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\services\\roledisplayservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\subscriptions\\receiptservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\subscriptions\\receiptservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\notes\\noteservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\notes\\noteservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\notes\\notesrequests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\notes\\notesrequests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\middleware\\attributes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\middleware\\attributes.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\tasks\\taskfileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\tasks\\taskfileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\auth\\turnstileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\auth\\turnstileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\models\\appauditlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\models\\appauditlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\tasks\\taskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\tasks\\taskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\authdtos\\registerorgdtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\authdtos\\registerorgdtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\authdtos\\logindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\authdtos\\logindto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\infrastructure\\file\\filemanagerhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\infrastructure\\file\\filemanagerhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\audit\\auditservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\audit\\auditservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\owner\\ownerdashboardservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\owner\\ownerdashboardservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\tasks\\memberscoreservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\tasks\\memberscoreservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\tasks\\deadlinenotifierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\tasks\\deadlinenotifierservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\tasks\\checklistservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\tasks\\checklistservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\dashboards\\projectteamdashboardservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\dashboards\\projectteamdashboardservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\authdtos\\ismemberresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\authdtos\\ismemberresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\backup\\backupservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\backup\\backupservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\importexport\\importexportdateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\importexport\\importexportdateservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\subscriptions\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\subscriptions\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\event\\calendarservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\event\\calendarservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\notifications\\notificationsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\notifications\\notificationsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\projects\\teamfileservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\projects\\teamfileservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\projects\\projectfileservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\projects\\projectfileservise.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\projects\\projectteamservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\projects\\projectteamservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\auth\\registerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\auth\\registerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\subscriptions\\planscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\subscriptions\\planscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\controllers\\subscriptions\\paymentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\controllers\\subscriptions\\paymentcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck\\services\\workuser\\blockservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{ED9BE50E-D836-5699-CB3D-02A00CA1F466}|steptreck\\steptreck.API.csproj|solutionrelative:steptreck\\services\\workuser\\blockservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\meloc\\AppData\\Local\\SourceServer\\8f80f3a6f074fad09466623f61a0ae9ae39000855a44b5dfb3fc658e45091fd9\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\components\\auditlogpanel.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\components\\auditlogpanel.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\components\\auditlogpanel.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\components\\auditlogpanel.razor.css||{A5401142-F49D-43DB-90B1-F57BA349E55C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\workplaceaudit.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\workplaceaudit.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptreck.web\\pages\\subscriptionconfig.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{C674ACC7-0BC6-4708-8601-19A8BB6DC098}|steptreck.Web\\steptreck.Web.csproj|solutionrelative:steptreck.web\\pages\\subscriptionconfig.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\dtos\\auditlogcreatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\dtos\\auditlogcreatedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\auditlogdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\auditlogdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|c:\\users\\meloc\\source\\repos\\steptreck\\steptrek.domain\\pagedresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A5B4270-5C29-434F-A7A7-E6CE191EF745}|steptrek.Domain\\steptreck.Domain.csproj|solutionrelative:steptrek.domain\\pagedresult.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 3,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ImportExportController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Database\\ImportExportController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Database\\ImportExportController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Database\\ImportExportController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Database\\ImportExportController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-22T20:23:27.295Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "BackupViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\BackupViewModel.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\ViewModel\\BackupViewModel.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\BackupViewModel.cs",
+              "RelativeToolTip": "steptreck.Web\\ViewModel\\BackupViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAABFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-22T20:22:14.355Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "WorkplaceDataTools.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceDataTools.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceDataTools.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceDataTools.razor*",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceDataTools.razor*",
+              "ViewState": "AgIAAGgBAAAAAAAAAAAkwJgBAABTAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-22T20:21:21.066Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AuthViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\AuthViewModel.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\ViewModel\\AuthViewModel.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\AuthViewModel.cs",
+              "RelativeToolTip": "steptreck.Web\\ViewModel\\AuthViewModel.cs",
+              "ViewState": "AgIAAJMAAAAAAAAAAAAkwLcAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:41:15.906Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "ProjectTaskChecklistController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Tasks\\ProjectTaskChecklistController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Tasks\\ProjectTaskChecklistController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Tasks\\ProjectTaskChecklistController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Tasks\\ProjectTaskChecklistController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-22T18:23:44.053Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "InviteServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Members\\InviteServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Members\\InviteServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Members\\InviteServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Members\\InviteServise.cs",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAowHwAAAAyAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:59:19.997Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "WorkplaceLayout.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Layout\\WorkplaceLayout.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Layout\\WorkplaceLayout.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Layout\\WorkplaceLayout.razor",
+              "RelativeToolTip": "steptreck.Web\\Layout\\WorkplaceLayout.razor",
+              "ViewState": "AgIAAIUEAAAAAAAAAAAcwNEEAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T04:36:31.617Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "MainLayout.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Layout\\MainLayout.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Layout\\MainLayout.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Layout\\MainLayout.razor",
+              "RelativeToolTip": "steptreck.Web\\Layout\\MainLayout.razor",
+              "ViewState": "AgIAAEwAAAAAAAAAAAAcwJQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T04:35:51.989Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\AuthController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Auth\\AuthController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\AuthController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Auth\\AuthController.cs",
+              "ViewState": "AgIAAEkAAAAAAAAAAADwv3EAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T04:14:04.426Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "AuditViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\AuditViewModel.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\ViewModel\\AuditViewModel.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\AuditViewModel.cs",
+              "RelativeToolTip": "steptreck.Web\\ViewModel\\AuditViewModel.cs",
+              "ViewState": "AgIAABgAAAAAAAAAAAAgwDYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-05T00:44:39.14Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "ProjectTeamMember.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\ProjectTeamMember.cs",
+              "RelativeDocumentMoniker": "steptreck\\Models\\ProjectTeamMember.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\ProjectTeamMember.cs",
+              "RelativeToolTip": "steptreck\\Models\\ProjectTeamMember.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-22T18:25:19.4Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\AuthService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Auth\\AuthService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\AuthService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Auth\\AuthService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwBsAAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T16:10:32.268Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Login.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\Login.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\Login.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\Login.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\Login.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-12T13:41:34.319Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "EmailHelper.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Email\\EmailHelper.cs",
+              "RelativeDocumentMoniker": "steptreck\\Infrastructure\\Email\\EmailHelper.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Email\\EmailHelper.cs",
+              "RelativeToolTip": "steptreck\\Infrastructure\\Email\\EmailHelper.cs",
+              "ViewState": "AgIAAPkAAAAAAAAAAAAUwAsBAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T20:23:59.306Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "InviteController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Invitations\\InviteController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Invitations\\InviteController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Invitations\\InviteController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Invitations\\InviteController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:23:01.069Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "SubscriptionService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\SubscriptionService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Subscriptions\\SubscriptionService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\SubscriptionService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Subscriptions\\SubscriptionService.cs",
+              "ViewState": "AgIAAN0AAAAAAAAAAAAwwAYBAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T16:32:37.571Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "ChatController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Chat\\ChatController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Chat\\ChatController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Chat\\ChatController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Chat\\ChatController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAzAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T12:13:11.503Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "ChatHub.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Chat\\ChatHub.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Chat\\ChatHub.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Chat\\ChatHub.cs",
+              "RelativeToolTip": "steptreck\\Services\\Chat\\ChatHub.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAQwGABAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:21:46.103Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "MemberController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Members\\MemberController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Members\\MemberController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Members\\MemberController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Members\\MemberController.cs",
+              "ViewState": "AgIAAGcAAAAAAAAAAAAYwAAAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T05:12:42.72Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "nginx.conf",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\nginx.conf",
+              "RelativeDocumentMoniker": "steptreck.Web\\nginx.conf",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\nginx.conf",
+              "RelativeToolTip": "steptreck.Web\\nginx.conf",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAcwE8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-05-17T18:29:13.781Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "ChatService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Chat\\ChatService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Chat\\ChatService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Chat\\ChatService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Chat\\ChatService.cs",
+              "ViewState": "AgIAAMoBAAAAAAAAAAAkwAECAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:21:54.965Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\appsettings.json",
+              "RelativeDocumentMoniker": "steptreck.Web\\wwwroot\\appsettings.json",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\appsettings.json",
+              "RelativeToolTip": "steptreck.Web\\wwwroot\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-17T18:39:38.997Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "TaskController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Tasks\\TaskController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Tasks\\TaskController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Tasks\\TaskController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Tasks\\TaskController.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T09:07:34.29Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "InvationTokenHelper.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Secutiry\\InvationTokenHelper.cs",
+              "RelativeDocumentMoniker": "steptreck\\Infrastructure\\Secutiry\\InvationTokenHelper.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Secutiry\\InvationTokenHelper.cs",
+              "RelativeToolTip": "steptreck\\Infrastructure\\Secutiry\\InvationTokenHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T09:07:48.732Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "Member.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\Member.cs",
+              "RelativeDocumentMoniker": "steptreck\\Models\\Member.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\Member.cs",
+              "RelativeToolTip": "steptreck\\Models\\Member.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T09:08:32.483Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "User.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\User.cs",
+              "RelativeDocumentMoniker": "steptreck\\Models\\User.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\User.cs",
+              "RelativeToolTip": "steptreck\\Models\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T09:08:36.662Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "WorkSession.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\WorkSession.cs",
+              "RelativeDocumentMoniker": "steptreck\\Models\\WorkSession.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\WorkSession.cs",
+              "RelativeToolTip": "steptreck\\Models\\WorkSession.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-19T09:08:39.918Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "TokenHelper.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Secutiry\\TokenHelper.cs",
+              "RelativeDocumentMoniker": "steptreck\\Infrastructure\\Secutiry\\TokenHelper.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\Secutiry\\TokenHelper.cs",
+              "RelativeToolTip": "steptreck\\Infrastructure\\Secutiry\\TokenHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACoAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T12:20:06.367Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 35,
+              "Title": "WorkSessionService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\SessionWork\\WorkSessionService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\SessionWork\\WorkSessionService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\SessionWork\\WorkSessionService.cs",
+              "RelativeToolTip": "steptreck\\Services\\SessionWork\\WorkSessionService.cs",
+              "ViewState": "AgIAAGMAAAAAAAAAAAAkwMcAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T10:00:01.014Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "WorkplaceTeamChat.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceTeamChat.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceTeamChat.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceTeamChat.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceTeamChat.razor",
+              "ViewState": "AgIAAL8EAAAAAAAAAAAcwAsFAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T22:47:28.89Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "ChatClient.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\ChatClient.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\Services\\ChatClient.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\ChatClient.cs",
+              "RelativeToolTip": "steptreck.Web\\Services\\ChatClient.cs",
+              "ViewState": "AgIAAC0AAAAAAAAAAAAowFMAAAAqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T09:33:35.452Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "WorkplaceSubscriptionManage.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceSubscriptionManage.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceSubscriptionManage.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceSubscriptionManage.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceSubscriptionManage.razor",
+              "ViewState": "AgIAAHgAAAAAAAAAAAAMwKMAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T19:50:20.332Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "SubscriptionsController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\SubscriptionsController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Subscriptions\\SubscriptionsController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\SubscriptionsController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Subscriptions\\SubscriptionsController.cs",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAjwHQAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T20:13:02.257Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "CurrentSubscriptionDto.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\SubscriptionsDTOs\\CurrentSubscriptionDto.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\SubscriptionsDTOs\\CurrentSubscriptionDto.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\SubscriptionsDTOs\\CurrentSubscriptionDto.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\SubscriptionsDTOs\\CurrentSubscriptionDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T19:50:56.176Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "ChatMessageDto.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\ChatDTOs\\ChatMessageDto.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\ChatDTOs\\ChatMessageDto.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\ChatDTOs\\ChatMessageDto.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\ChatDTOs\\ChatMessageDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAqwAgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-13T23:30:33.948Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "MemberServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Members\\MemberServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Members\\MemberServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Members\\MemberServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Members\\MemberServise.cs",
+              "ViewState": "AgIAAAoAAAAAAAAAAAAAwB0AAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:59:25.692Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 36,
+              "Title": "WorkSessionController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\WorkSession\\WorkSessionController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\WorkSession\\WorkSessionController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\WorkSession\\WorkSessionController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\WorkSession\\WorkSessionController.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAABoAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T11:00:21.939Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 38,
+              "Title": "ProjectSectionTabs.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\ProjectSectionTabs.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Components\\ProjectSectionTabs.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\ProjectSectionTabs.razor",
+              "RelativeToolTip": "steptreck.Web\\Components\\ProjectSectionTabs.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T11:01:31.961Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 37,
+              "Title": "WorkSessionViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\WorkSessionViewModel.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\ViewModel\\WorkSessionViewModel.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\WorkSessionViewModel.cs",
+              "RelativeToolTip": "steptreck.Web\\ViewModel\\WorkSessionViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T11:01:49.85Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 39,
+              "Title": "ScoreCard.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\ScoreCard.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Components\\ScoreCard.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\ScoreCard.razor",
+              "RelativeToolTip": "steptreck.Web\\Components\\ScoreCard.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T11:01:29.776Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 40,
+              "Title": "WorkplaceTeamFiles.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceTeamFiles.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceTeamFiles.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceTeamFiles.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceTeamFiles.razor",
+              "ViewState": "AgIAAGAAAAAAAAAAAAAAAJIAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T10:56:36.374Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 43,
+              "Title": "prometheus.yml",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Monitoting\\prometheus.yml",
+              "RelativeDocumentMoniker": "steptreck\\Monitoting\\prometheus.yml",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Monitoting\\prometheus.yml",
+              "RelativeToolTip": "steptreck\\Monitoting\\prometheus.yml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
+              "WhenOpened": "2026-05-05T08:54:13.3Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 46,
+              "Title": "AuditController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Trecking\\AuditController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Trecking\\AuditController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Trecking\\AuditController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Trecking\\AuditController.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAUwEsAAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T10:09:49.351Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 47,
+              "Title": "PrometheusClient.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Monitoring\\PrometheusClient.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Monitoring\\PrometheusClient.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Monitoring\\PrometheusClient.cs",
+              "RelativeToolTip": "steptreck\\Services\\Monitoring\\PrometheusClient.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-05T08:33:45.826Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 41,
+              "Title": "OpsMetricsController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAA8wEEAAABNAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-05T08:34:05.446Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 42,
+              "Title": "docker-compose.yml",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Monitoting\\docker-compose.yml",
+              "RelativeDocumentMoniker": "steptreck\\Monitoting\\docker-compose.yml",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Monitoting\\docker-compose.yml",
+              "RelativeToolTip": "steptreck\\Monitoting\\docker-compose.yml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
+              "WhenOpened": "2026-05-05T08:54:09.264Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 44,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Program.cs",
+              "RelativeDocumentMoniker": "steptreck\\Program.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Program.cs",
+              "RelativeToolTip": "steptreck\\Program.cs",
+              "ViewState": "AgIAAL4AAAAAAAAAAAAkwG8AAAAHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-03T10:49:45.524Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 48,
+              "Title": "ops-metrics.js",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\js\\ops-metrics.js",
+              "RelativeDocumentMoniker": "steptreck.Web\\wwwroot\\js\\ops-metrics.js",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\js\\ops-metrics.js",
+              "RelativeToolTip": "steptreck.Web\\wwwroot\\js\\ops-metrics.js",
+              "ViewState": "AgIAALQAAAAAAAAAAAAAAOkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-05-18T09:57:28.953Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 45,
+              "Title": "Dockerfile",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Dockerfile",
+              "RelativeDocumentMoniker": "steptreck\\Dockerfile",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Dockerfile",
+              "RelativeToolTip": "steptreck\\Dockerfile",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-05-17T19:29:37.451Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 49,
+              "Title": "WorkplaceOpsMetrics.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceOpsMetrics.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceOpsMetrics.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceOpsMetrics.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceOpsMetrics.razor",
+              "ViewState": "AgIAAM8AAAAAAAAAAAAcwD0BAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T10:12:37.479Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 50,
+              "Title": "InviteTokenStore.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\InviteTokenStore.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\Services\\InviteTokenStore.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\InviteTokenStore.cs",
+              "RelativeToolTip": "steptreck.Web\\Services\\InviteTokenStore.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T09:33:34.857Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 51,
+              "Title": "ProjectsController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Projects\\ProjectsController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Projects\\ProjectsController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Projects\\ProjectsController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Projects\\ProjectsController.cs",
+              "ViewState": "AgIAAGkAAAAAAAAAAAArwJAAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T04:52:17.706Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 58,
+              "Title": "RegisterController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\RegisterController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Auth\\RegisterController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\RegisterController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Auth\\RegisterController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T04:13:59.3Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 55,
+              "Title": "WorkplaceOwnerDashboard.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceOwnerDashboard.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceOwnerDashboard.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceOwnerDashboard.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceOwnerDashboard.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T04:37:43.399Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 52,
+              "Title": "AvatarService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\WorkUser\\AvatarService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\WorkUser\\AvatarService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\WorkUser\\AvatarService.cs",
+              "RelativeToolTip": "steptreck\\Services\\WorkUser\\AvatarService.cs",
+              "ViewState": "AgIAAB8AAAAAAAAAAAAgwEkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T05:10:07.504Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 60,
+              "Title": "ResetPasswordViewModel.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\ResetPasswordViewModel.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\ViewModel\\ResetPasswordViewModel.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\ViewModel\\ResetPasswordViewModel.cs",
+              "RelativeToolTip": "steptreck.Web\\ViewModel\\ResetPasswordViewModel.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAA7AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T04:13:14.711Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 57,
+              "Title": "ResetPasswordController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\ResetPasswordController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Auth\\ResetPasswordController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Auth\\ResetPasswordController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Auth\\ResetPasswordController.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAABQAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-18T04:12:58.047Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 53,
+              "Title": "ProjectServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Projects\\ProjectServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Projects\\ProjectServise.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAEAAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:14:32.091Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 56,
+              "Title": "SubscriptionCheckout.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\SubscriptionCheckout.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\SubscriptionCheckout.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\SubscriptionCheckout.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\SubscriptionCheckout.razor",
+              "ViewState": "AgIAACkAAAAAAAAAAAAAAEQAAAAaAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-18T04:35:57.082Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 54,
+              "Title": "SubscriptionGate.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Gate\\SubscriptionGate.cs",
+              "RelativeDocumentMoniker": "steptreck\\Gate\\SubscriptionGate.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Gate\\SubscriptionGate.cs",
+              "RelativeToolTip": "steptreck\\Gate\\SubscriptionGate.cs",
+              "ViewState": "AgIAACUAAAAAAAAAAAAAwEIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:24:27.309Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 61,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "steptreck.Web\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Properties\\launchSettings.json",
+              "RelativeToolTip": "steptreck.Web\\Properties\\launchSettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-17T19:17:14.561Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 64,
+              "Title": "Home.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\Home.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\Home.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\Home.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\Home.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACQAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-17T19:16:47.592Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 65,
+              "Title": "Dockerfile",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Dockerfile",
+              "RelativeDocumentMoniker": "steptreck.Web\\Dockerfile",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Dockerfile",
+              "RelativeToolTip": "steptreck.Web\\Dockerfile",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-05-17T18:29:59.48Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 66,
+              "Title": "RoleDisplayService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\RoleDisplayService.cs",
+              "RelativeDocumentMoniker": "steptreck.Web\\Services\\RoleDisplayService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Services\\RoleDisplayService.cs",
+              "RelativeToolTip": "steptreck.Web\\Services\\RoleDisplayService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAABHAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T19:33:40.167Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 73,
+              "Title": "AppAuditLog.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\AppAuditLog.cs",
+              "RelativeDocumentMoniker": "steptreck\\Models\\AppAuditLog.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Models\\AppAuditLog.cs",
+              "RelativeToolTip": "steptreck\\Models\\AppAuditLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T13:51:52.316Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 59,
+              "Title": "EmailDto.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\EmailDto.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\AuthDTOs\\EmailDto.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\EmailDto.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\AuthDTOs\\EmailDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:39:44.422Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 63,
+              "Title": "appsettings.Docker.json",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\appsettings.Docker.json",
+              "RelativeDocumentMoniker": "steptreck.Web\\wwwroot\\appsettings.Docker.json",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\wwwroot\\appsettings.Docker.json",
+              "RelativeToolTip": "steptreck.Web\\wwwroot\\appsettings.Docker.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAADAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-17T19:17:05.617Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 62,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\appsettings.json",
+              "RelativeDocumentMoniker": "steptreck\\appsettings.json",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\appsettings.json",
+              "RelativeToolTip": "steptreck\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-05T08:31:28.648Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 72,
+              "Title": "TurnstileService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\TurnstileService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Auth\\TurnstileService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\TurnstileService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Auth\\TurnstileService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAsAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T15:43:33.912Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 70,
+              "Title": "Attributes.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Middleware\\Attributes.cs",
+              "RelativeDocumentMoniker": "steptreck\\Middleware\\Attributes.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Middleware\\Attributes.cs",
+              "RelativeToolTip": "steptreck\\Middleware\\Attributes.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T15:55:46.972Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 68,
+              "Title": "NoteService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notes\\NoteService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Notes\\NoteService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notes\\NoteService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Notes\\NoteService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:59:34.147Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 69,
+              "Title": "NotesRequests.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notes\\NotesRequests.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Notes\\NotesRequests.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notes\\NotesRequests.cs",
+              "RelativeToolTip": "steptreck\\Services\\Notes\\NotesRequests.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-14T16:06:20.273Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 67,
+              "Title": "ReceiptService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\ReceiptService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Subscriptions\\ReceiptService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\ReceiptService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Subscriptions\\ReceiptService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:26:41.967Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 81,
+              "Title": "DeadlineNotifierService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\DeadlineNotifierService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Tasks\\DeadlineNotifierService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\DeadlineNotifierService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Tasks\\DeadlineNotifierService.cs",
+              "ViewState": "AgIAAIUAAAAAAAAAAAAcwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:23:19.955Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 77,
+              "Title": "FileManagerHelper.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\File\\FileManagerHelper.cs",
+              "RelativeDocumentMoniker": "steptreck\\Infrastructure\\File\\FileManagerHelper.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Infrastructure\\File\\FileManagerHelper.cs",
+              "RelativeToolTip": "steptreck\\Infrastructure\\File\\FileManagerHelper.cs",
+              "ViewState": "AgIAAFAAAAAAAAAAAAAwwFYAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:18:29.67Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 76,
+              "Title": "LoginDTO.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\LoginDTO.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\AuthDTOs\\LoginDTO.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\LoginDTO.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\AuthDTOs\\LoginDTO.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:39:47.112Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 71,
+              "Title": "TaskFileService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\TaskFileService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Tasks\\TaskFileService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\TaskFileService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Tasks\\TaskFileService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:20:35.527Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 74,
+              "Title": "TaskService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\TaskService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Tasks\\TaskService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\TaskService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Tasks\\TaskService.cs",
+              "ViewState": "AgIAACMAAAAAAAAAAAAQwEIBAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:17:12.219Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 80,
+              "Title": "MemberScoreServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\MemberScoreServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Tasks\\MemberScoreServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\MemberScoreServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Tasks\\MemberScoreServise.cs",
+              "ViewState": "AgIAAGUAAAAAAAAAAAAIwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:23:29.915Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 75,
+              "Title": "RegisterOrgDTOs.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\RegisterOrgDTOs.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\AuthDTOs\\RegisterOrgDTOs.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\RegisterOrgDTOs.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\AuthDTOs\\RegisterOrgDTOs.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAABFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:21:02.969Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 79,
+              "Title": "OwnerDashboardService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Owner\\OwnerDashboardService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Owner\\OwnerDashboardService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Owner\\OwnerDashboardService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Owner\\OwnerDashboardService.cs",
+              "ViewState": "AgIAAF4AAAAAAAAAAAA0wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T22:23:52.917Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 78,
+              "Title": "AuditService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Audit\\AuditService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Audit\\AuditService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Audit\\AuditService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Audit\\AuditService.cs",
+              "ViewState": "AgIAAAQBAAAAAAAAAAA5wF0BAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:40:57Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 87,
+              "Title": "PaymentService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\PaymentService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Subscriptions\\PaymentService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Subscriptions\\PaymentService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Subscriptions\\PaymentService.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAA5wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:26:35.753Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 86,
+              "Title": "ImportExportDateService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\ImportExport\\ImportExportDateService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\ImportExport\\ImportExportDateService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\ImportExport\\ImportExportDateService.cs",
+              "RelativeToolTip": "steptreck\\Services\\ImportExport\\ImportExportDateService.cs",
+              "ViewState": "AgIAADsAAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:29:01.674Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 82,
+              "Title": "CheckListServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\CheckListServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Tasks\\CheckListServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Tasks\\CheckListServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Tasks\\CheckListServise.cs",
+              "ViewState": "AgIAACYAAAAAAAAAAAAwwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:17:38.799Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 85,
+              "Title": "BackupService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Backup\\BackupService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Backup\\BackupService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Backup\\BackupService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Backup\\BackupService.cs",
+              "ViewState": "AgIAABkAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:29:11.797Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 84,
+              "Title": "IsMemberResponse.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\IsMemberResponse.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\AuthDTOs\\IsMemberResponse.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuthDTOs\\IsMemberResponse.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\AuthDTOs\\IsMemberResponse.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:39:45.538Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 83,
+              "Title": "ProjectTeamDashboardService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Dashboards\\ProjectTeamDashboardService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Dashboards\\ProjectTeamDashboardService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Dashboards\\ProjectTeamDashboardService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Dashboards\\ProjectTeamDashboardService.cs",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAzwBwAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:23:52.461Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 89,
+              "Title": "NotificationsService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notifications\\NotificationsService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Notifications\\NotificationsService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Notifications\\NotificationsService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Notifications\\NotificationsService.cs",
+              "ViewState": "AgIAAGgAAAAAAAAAAAAIwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:22:59.347Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 90,
+              "Title": "TeamFileServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\TeamFileServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Projects\\TeamFileServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\TeamFileServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Projects\\TeamFileServise.cs",
+              "ViewState": "AgIAAF0AAAAAAAAAAAAowAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:21:07.716Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 88,
+              "Title": "CalendarService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Event\\CalendarService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Event\\CalendarService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Event\\CalendarService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Event\\CalendarService.cs",
+              "ViewState": "AgIAABYBAAAAAAAAAAAAwAkAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:47:33.757Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 91,
+              "Title": "ProjectFileServise.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectFileServise.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Projects\\ProjectFileServise.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectFileServise.cs",
+              "RelativeToolTip": "steptreck\\Services\\Projects\\ProjectFileServise.cs",
+              "ViewState": "AgIAABkAAAAAAAAAAAAgwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T13:20:53.709Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 93,
+              "Title": "RegisterService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\RegisterService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Auth\\RegisterService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Auth\\RegisterService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Auth\\RegisterService.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAAAA4AAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-12T12:18:55.206Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 94,
+              "Title": "PlansController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\PlansController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Subscriptions\\PlansController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\PlansController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Subscriptions\\PlansController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-10T11:09:44.988Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 95,
+              "Title": "PaymentController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\PaymentController.cs",
+              "RelativeDocumentMoniker": "steptreck\\Controllers\\Subscriptions\\PaymentController.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Controllers\\Subscriptions\\PaymentController.cs",
+              "RelativeToolTip": "steptreck\\Controllers\\Subscriptions\\PaymentController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-10T11:09:44.306Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 101,
+              "Title": "WorkplaceAudit.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceAudit.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\WorkplaceAudit.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\WorkplaceAudit.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\WorkplaceAudit.razor",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-05T00:40:48.745Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 92,
+              "Title": "ProjectTeamService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectTeamService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\Projects\\ProjectTeamService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\Projects\\ProjectTeamService.cs",
+              "RelativeToolTip": "steptreck\\Services\\Projects\\ProjectTeamService.cs",
+              "ViewState": "AgIAANQAAAAAAAAAAAAuwJ0AAABqAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-04T23:16:41.564Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 97,
+              "Title": "BlockService.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\WorkUser\\BlockService.cs",
+              "RelativeDocumentMoniker": "steptreck\\Services\\WorkUser\\BlockService.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Services\\WorkUser\\BlockService.cs",
+              "RelativeToolTip": "steptreck\\Services\\WorkUser\\BlockService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-04T08:05:27.575Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 96,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "steptreck\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck\\Properties\\launchSettings.json",
+              "RelativeToolTip": "steptreck\\Properties\\launchSettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAwAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-05-05T09:01:12.546Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 99,
+              "Title": "AuditLogPanel.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\AuditLogPanel.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Components\\AuditLogPanel.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\AuditLogPanel.razor",
+              "RelativeToolTip": "steptreck.Web\\Components\\AuditLogPanel.razor",
+              "ViewState": "AgIAAMoBAAAAAAAAAAAAwAgCAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-05T00:41:08.809Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 100,
+              "Title": "AuditLogPanel.razor.css",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\AuditLogPanel.razor.css",
+              "RelativeDocumentMoniker": "steptreck.Web\\Components\\AuditLogPanel.razor.css",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Components\\AuditLogPanel.razor.css",
+              "RelativeToolTip": "steptreck.Web\\Components\\AuditLogPanel.razor.css",
+              "ViewState": "AgIAAIIAAAAAAAAAAAAYwLMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
+              "WhenOpened": "2026-05-05T00:41:41.044Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 98,
+              "Title": "OpsMetricsController.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\AppData\\Local\\SourceServer\\8f80f3a6f074fad09466623f61a0ae9ae39000855a44b5dfb3fc658e45091fd9\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "RelativeDocumentMoniker": "..\\..\\..\\AppData\\Local\\SourceServer\\8f80f3a6f074fad09466623f61a0ae9ae39000855a44b5dfb3fc658e45091fd9\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs",
+              "ToolTip": "C:\\Users\\meloc\\AppData\\Local\\SourceServer\\8f80f3a6f074fad09466623f61a0ae9ae39000855a44b5dfb3fc658e45091fd9\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs [\u0422\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u0435\u043D\u0438\u0435]",
+              "RelativeToolTip": "..\\..\\..\\AppData\\Local\\SourceServer\\8f80f3a6f074fad09466623f61a0ae9ae39000855a44b5dfb3fc658e45091fd9\\steptreck\\Controllers\\Trecking\\OpsMetricsController.cs [\u0422\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u0435\u043D\u0438\u0435]",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAABAAAAAQAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-05T08:38:29.361Z",
+              "EditorCaption": " [\u0422\u043E\u043B\u044C\u043A\u043E \u0447\u0442\u0435\u043D\u0438\u0435]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 102,
+              "Title": "SubscriptionConfig.razor",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\SubscriptionConfig.razor",
+              "RelativeDocumentMoniker": "steptreck.Web\\Pages\\SubscriptionConfig.razor",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptreck.Web\\Pages\\SubscriptionConfig.razor",
+              "RelativeToolTip": "steptreck.Web\\Pages\\SubscriptionConfig.razor",
+              "ViewState": "AgIAACABAAAAAAAAAAAAAE0BAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2026-05-03T16:32:04.215Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 105,
+              "Title": "PagedResult.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\PagedResult.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\PagedResult.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\PagedResult.cs",
+              "RelativeToolTip": "steptrek.Domain\\PagedResult.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T10:07:45.85Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 104,
+              "Title": "AuditLogDto.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\AuditLogDto.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\AuditLogDto.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\AuditLogDto.cs",
+              "RelativeToolTip": "steptrek.Domain\\AuditLogDto.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAwwCEAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T10:05:49.036Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 103,
+              "Title": "AuditLogCreateDto.cs",
+              "DocumentMoniker": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuditLogCreateDto.cs",
+              "RelativeDocumentMoniker": "steptrek.Domain\\DTOs\\AuditLogCreateDto.cs",
+              "ToolTip": "C:\\Users\\meloc\\source\\repos\\steptreck\\steptrek.Domain\\DTOs\\AuditLogCreateDto.cs",
+              "RelativeToolTip": "steptrek.Domain\\DTOs\\AuditLogCreateDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-02T09:42:56.114Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

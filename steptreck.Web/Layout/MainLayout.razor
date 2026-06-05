@@ -1,0 +1,192 @@
+﻿@inherits LayoutComponentBase
+@inject steptreck.Web.ViewModel.AuthViewModel AuthVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject steptreck.Web.Services.IJwtService JwtService
+@inject steptreck.Web.Services.IRoleAccessService RoleAccess
+@inject NavigationManager Nav
+@inject IConfiguration Config
+
+<header class="site-header">
+    <div class="site-shell">
+        <div class="site-left">
+            <a class="brand" href="/">
+                <img class="brand-logo" src="icon.png" alt="StepTreck" />
+                <span>StepTreck</span>
+            </a>
+
+            <nav class="site-nav">
+                <a href="/#plans">Тарифы</a>
+                <a href="/subscription/config">Конфиг подписки</a>
+
+                @if (_isOwner)
+                {
+                    <a href="/workplace/subscription/manage">Моя подписка</a>
+                }
+            </nav>
+        </div>
+
+        <div class="site-actions">
+            @if (_authChecked)
+            {
+                @if (_isAuthenticated)
+                {
+                    @if (CanAccessWorkspace)
+                    {
+                        <a class="btn primary" href="/workplace">
+                            Рабочее пространство
+                        </a>
+                    }
+                    else
+                    {
+                        <button class="btn primary disabled"
+                                disabled
+                                title="У вас нет команды">
+                            Рабочее пространство
+                        </button>
+
+                        <button class="btn ghost"
+                                @onclick="LogoutAsync">
+                            Выйти
+                        </button>
+                    }
+                }
+                else
+                {
+                    <div class="auth-actions">
+                        <a class="btn ghost" href="/login">Войти</a>
+                        <a class="btn primary" href="/register">Начать пользоваться</a>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</header>
+
+<main>
+    @Body
+</main>
+
+<footer class="site-footer">
+    <div class="site-shell footer-grid">
+        <div>
+            <div class="brand">
+                <img class="brand-logo" src="icon.png" alt="StepTreck" />
+                <span>StepTreck</span>
+            </div>
+
+            <p class="footer-text">
+                Сервис для управления командой и процессами. Всё, что нужно для прозрачной работы.
+            </p>
+        </div>
+
+        <div class="footer-links">
+            <a href="/#about">О сервисе</a>
+            <a href="/#plans">Тарифы</a>
+            <a href="/login">Войти</a>
+        </div>
+    </div>
+</footer>
+
+@code {
+    private bool _authChecked;
+    private bool _isMember;
+    private bool _isAuthenticated;
+    private bool _isOwner;
+    private bool _isRole5;
+
+    private string _fullName = "участник";
+    private string _initials = "ST";
+    private string? _avatarUrl;
+
+    private string ApiBase => Config["Api:BaseUrl"]!.TrimEnd('/');
+
+    private bool CanAccessWorkspace =>
+        _isAuthenticated && (_isMember || _isOwner || _isRole5);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var token = await JwtService.GetTokenAsync();
+            _isAuthenticated = !string.IsNullOrWhiteSpace(token);
+
+            if (_isAuthenticated)
+            {
+                var roleId = await RoleAccess.GetCurrentRoleIdAsync();
+
+                _isOwner = roleId == 1;
+                _isRole5 = roleId == 5;
+
+                _isMember = await AuthVm.IsMemberAsync();
+
+                if (_isMember)
+                {
+                    var profile = await MembersVm.GetMyProfileAsync();
+
+                    if (profile is not null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(profile.FullName))
+                            _fullName = profile.FullName;
+
+                        _initials = BuildInitials(_fullName);
+
+                        if (!string.IsNullOrWhiteSpace(profile.AvatarUrl))
+                            _avatarUrl = BuildAvatarUrl(profile.AvatarUrl);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            _isMember = false;
+            _isOwner = false;
+            _isRole5 = false;
+            _isAuthenticated = false;
+        }
+
+        _authChecked = true;
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthVm.LogoutAsync();
+        Nav.NavigateTo("/login");
+    }
+
+    private string? BuildAvatarUrl(string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+            return null;
+
+        var raw = avatarUrl.Trim();
+
+        if (Uri.TryCreate(raw, UriKind.Absolute, out var abs) &&
+            (abs.Scheme == Uri.UriSchemeHttp || abs.Scheme == Uri.UriSchemeHttps))
+            return abs.ToString();
+
+        var apiBase = ApiBase;
+
+        if (string.IsNullOrWhiteSpace(apiBase))
+            return raw;
+
+        if (!Uri.TryCreate(apiBase + "/", UriKind.Absolute, out var baseUri))
+            return raw;
+
+        var relative = raw.TrimStart('/');
+
+        return new Uri(baseUri, relative).ToString();
+    }
+
+    private static string BuildInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 0)
+            return "ST";
+
+        if (parts.Length == 1)
+            return parts[0].Substring(0, 1).ToUpperInvariant();
+
+        return $"{parts[0][0]}{parts[1][0]}".ToUpperInvariant();
+    }
+}

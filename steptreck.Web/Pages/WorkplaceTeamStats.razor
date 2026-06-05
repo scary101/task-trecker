@@ -1,0 +1,500 @@
+﻿@page "/workplace/projects/{ProjectId:int}/teams/{TeamId:int}/stats"
+@using steptreck.Domain.DTOs.MemberDTOs
+@using steptreck.Domain.DTOs.TeamDTOs
+@inject steptreck.Web.ViewModel.ProjectTeamsViewModel TeamsVm
+@inject steptreck.Web.ViewModel.MemberScoreViewModel ScoreVm
+@inject steptreck.Web.ViewModel.MembersVm MembersVm
+@inject NavigationManager Nav
+@inject steptreck.Web.Services.IUserRoleStore RoleStore
+@layout steptreck.Web.Layout.WorkplaceLayout
+
+<main class="team-stats-page">
+    <section class="stats-page-wrap">
+
+        @if (_roleReady && !_isTeamLead && !_isEmployee)
+        {
+            <TeamSectionTabs ProjectId="ProjectId"
+                             TeamId="TeamId"
+                             Active="stats"
+                             ShowWorkspaceLinks="@(!_isOwner)"
+                             ShowTaskLinks="@(!_isOwner)" />
+        }
+
+        <div class="stats-shell">
+            <header class="stats-hero">
+                <div class="hero-glow hero-glow-one"></div>
+                <div class="hero-glow hero-glow-two"></div>
+
+                <div class="hero-content">
+                    <div class="eyebrow">Командная статистика</div>
+
+                    <div class="hero-title-row">
+                        <div>
+                            <h1>@(_team?.Name ?? "Рейтинг команды")</h1>
+                            <p>
+                                Сводка по задачам, дедлайнам и trust-рейтингу помогает быстро увидеть
+                                сильных участников, зоны риска и общий темп команды.
+                            </p>
+                        </div>
+
+                        @if (!_loading && _filtered.Count > 0)
+                        {
+                            <div class="team-score-card">
+                                <span>Средний Trust</span>
+                                <strong>@_avgTrust</strong>
+                                <em>@_summaryTrustLevel</em>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </header>
+
+            <section class="filters-panel">
+                <div class="filter-field search-field">
+                    <label>Найти участника</label>
+                    <input type="text"
+                           placeholder="Введите имя или ID"
+                           @bind="_query"
+                           @bind:event="oninput"
+                           @bind:after="OnFiltersChanged" />
+                </div>
+
+                <div class="filter-field">
+                    <label>Уровень</label>
+                    <select @bind="_trustFilter" @bind:after="OnFiltersChanged">
+                        <option value="all">Все участники</option>
+                        <option value="good">Надёжный</option>
+                        <option value="watch">Под наблюдением</option>
+                        <option value="risk">Риск</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label>Сортировка</label>
+                    <select @bind="_sortKey" @bind:after="OnFiltersChanged">
+                        <option value="ontime_desc">Вовремя — сначала лучшие</option>
+                        <option value="ontime_asc">Вовремя — сначала слабые</option>
+                        <option value="trust_desc">Trust — сначала лучшие</option>
+                        <option value="trust_asc">Trust — сначала слабые</option>
+                        <option value="completed_desc">Выполнено — больше</option>
+                        <option value="missed_desc">Пропущено — больше</option>
+                        <option value="missrate_desc">% пропусков — больше</option>
+                        <option value="name_asc">Имя A-Я</option>
+                    </select>
+                </div>
+            </section>
+
+            @if (_loading)
+            {
+                <div class="state-card">
+                    <div class="loader"></div>
+                    <h3>Загружаем рейтинг...</h3>
+                    <p>Собираем статистику команды.</p>
+                </div>
+            }
+            else if (_filtered.Count == 0)
+            {
+                <div class="state-card">
+                    <div class="empty-icon">🏁</div>
+                    <h3>Пока нет данных</h3>
+                    <p>Когда у участников появятся задачи, здесь появится рейтинг.</p>
+                </div>
+            }
+            else
+            {
+                <section class="summary-grid">
+                    <article class="summary-card accent">
+                        <span>Участников</span>
+                        <strong>@_filtered.Count</strong>
+                        <p>в текущей выборке</p>
+                    </article>
+
+                    <article class="summary-card">
+                        <span>Выполнено</span>
+                        <strong>@_totalCompleted</strong>
+                        <p>закрытых задач</p>
+                    </article>
+
+                    <article class="summary-card">
+                        <span>Пропущено</span>
+                        <strong>@_totalMissed</strong>
+                        <p>дедлайнов</p>
+                    </article>
+
+                    <article class="summary-card danger">
+                        <span>% пропусков</span>
+                        <strong>@_missRate%</strong>
+                        <p>по команде</p>
+                    </article>
+                </section>
+
+                @if (_filtered.Count >= 3)
+                {
+                    <section class="podium-section">
+                        <div class="section-title">
+                            <span>Топ-3</span>
+                            <h2>Пьедестал команды</h2>
+                        </div>
+
+                        <div class="podium">
+                            @{
+                                var top = _filtered.Take(3).ToList();
+                            }
+
+                            @if (top.Count > 1)
+                            {
+                                var s = top[1];
+
+                                <button class="podium-card second"
+                                        type="button"
+                                        @onclick="() => OpenMember(s.MemberId)">
+                                    <div class="podium-place">🥈</div>
+                                    <div class="avatar">@GetInitials(s.FullName)</div>
+                                    <h3>@s.FullName</h3>
+                                    <p>@GetTrustLevel(s.Trust)</p>
+                                    <strong>@s.Trust</strong>
+                                    <span>Trust</span>
+                                </button>
+                            }
+
+                            @if (top.Count > 0)
+                            {
+                                var s = top[0];
+
+                                <button class="podium-card first"
+                                        type="button"
+                                        @onclick="() => OpenMember(s.MemberId)">
+                                    <div class="crown">👑</div>
+                                    <div class="podium-place">🥇</div>
+                                    <div class="avatar">@GetInitials(s.FullName)</div>
+                                    <h3>@s.FullName</h3>
+                                    <p>@GetTrustLevel(s.Trust)</p>
+                                    <strong>@s.Trust</strong>
+                                    <span>Trust</span>
+                                </button>
+                            }
+
+                            @if (top.Count > 2)
+                            {
+                                var s = top[2];
+
+                                <button class="podium-card third"
+                                        type="button"
+                                        @onclick="() => OpenMember(s.MemberId)">
+                                    <div class="podium-place">🥉</div>
+                                    <div class="avatar">@GetInitials(s.FullName)</div>
+                                    <h3>@s.FullName</h3>
+                                    <p>@GetTrustLevel(s.Trust)</p>
+                                    <strong>@s.Trust</strong>
+                                    <span>Trust</span>
+                                </button>
+                            }
+                        </div>
+                    </section>
+                }
+
+                <section class="leaderboard-section">
+                    <div class="section-title">
+                        <span>Общий зачёт</span>
+                        <h2>Гонка участников</h2>
+                    </div>
+
+                    <div class="leaderboard">
+                        @for (var i = 0; i < _filtered.Count; i++)
+                        {
+                            var s = _filtered[i];
+                            var place = i + 1;
+                            var onTime = GetOnTimeRate(s);
+                            var trustClass = GetTrustClass(s.Trust);
+                            var medal = GetMedal(i);
+
+                            <button class="leader-row place-@place @trustClass"
+                                    type="button"
+                                    @onclick="() => OpenMember(s.MemberId)">
+                                <div class="rank-block">
+                                    <span class="rank-medal">@medal</span>
+                                    <strong>#@place</strong>
+                                </div>
+
+                                <div class="member-block">
+                                    <div class="avatar small">@GetInitials(s.FullName)</div>
+                                    <div>
+                                        <h3>@s.FullName</h3>
+                                        <p>ID @s.MemberId</p>
+                                    </div>
+                                </div>
+
+                                <div class="score-block">
+                                    <span>Trust</span>
+                                    <strong>@s.Trust</strong>
+                                    <em class="trust-badge @trustClass">@GetTrustLevel(s.Trust)</em>
+                                </div>
+
+                                <div class="progress-block">
+                                    <div class="progress-head">
+                                        <span>Вовремя</span>
+                                        <strong>@onTime%</strong>
+                                    </div>
+                                    <div class="progress-track">
+                                        <div class="progress-fill"
+                                             style="@($"width: {onTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}%;")">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mini-stats">
+                                    <div>
+                                        <span>Выдано</span>
+                                        <strong>@s.TotalAssignedCount</strong>
+                                    </div>
+                                    <div>
+                                        <span>Выполнено</span>
+                                        <strong>@s.CompletedCount</strong>
+                                    </div>
+                                    <div>
+                                        <span>Пропуски</span>
+                                        <strong>@s.MissedCount</strong>
+                                    </div>
+                                </div>
+                            </button>
+                        }
+                    </div>
+                </section>
+            }
+        </div>
+    </section>
+</main>
+
+@code {
+    [Parameter] public int ProjectId { get; set; }
+    [Parameter] public int TeamId { get; set; }
+
+    private TeamReadDto? _team;
+    private List<ScoreRowDto> _scores = new();
+    private List<ScoreRowDto> _filtered = new();
+    private bool _loading = true;
+    private bool _roleReady;
+    private bool _isOwner;
+    private bool _isTeamLead;
+    private bool _isEmployee;
+    private decimal _avgTrust;
+    private int _totalCompleted;
+    private int _totalMissed;
+    private decimal _missRate;
+    private string _summaryTrustLevel = "—";
+    private string _query = string.Empty;
+    private string _trustFilter = "all";
+    private string _sortKey = "ontime_desc";
+
+    private const int OwnerRoleId = 1;
+    private const int TeamLeadRoleId = 3;
+    private const int EmployeeRoleId = 4;
+    private const int AdminRoleId = 5;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _roleReady = false;
+        var roleId = await RoleStore.GetRoleIdAsync();
+
+        if (roleId == AdminRoleId)
+        {
+            Nav.NavigateTo("/workplace/metrics", forceLoad: true);
+            return;
+        }
+
+        _isOwner = roleId == OwnerRoleId;
+        _isTeamLead = roleId == TeamLeadRoleId;
+        _isEmployee = roleId == EmployeeRoleId;
+
+        if (_isEmployee)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}/tasks", forceLoad: true);
+                return;
+            }
+        }
+
+        if (_isTeamLead)
+        {
+            var profile = await MembersVm.GetMyProfileAsync();
+
+            if (profile?.Team is null)
+            {
+                Nav.NavigateTo("/workplace", forceLoad: true);
+                return;
+            }
+
+            if (profile.Team.TeamId != TeamId || profile.Team.ProjectId != ProjectId)
+            {
+                Nav.NavigateTo($"/workplace/projects/{profile.Team.ProjectId}/teams/{profile.Team.TeamId}", forceLoad: true);
+                return;
+            }
+        }
+
+        _roleReady = true;
+
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        _team = await TeamsVm.GetTeamAsync(TeamId);
+        _scores = await ScoreVm.GetScoreByTeam(TeamId);
+
+        ApplyFilters();
+        BuildSummary();
+
+        _loading = false;
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<ScoreRowDto> items = _scores;
+
+        var q = (_query ?? string.Empty).Trim();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            items = items.Where(x =>
+                x.FullName.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                x.MemberId.ToString().Contains(q, StringComparison.OrdinalIgnoreCase));
+        }
+
+        items = _trustFilter switch
+        {
+            "good" => items.Where(x => x.Trust >= 80),
+            "watch" => items.Where(x => x.Trust >= 50 && x.Trust < 80),
+            "risk" => items.Where(x => x.Trust < 50),
+            _ => items
+        };
+
+        items = _sortKey switch
+        {
+            "ontime_asc" => items.OrderBy(x => GetOnTimeRate(x)),
+            "ontime_desc" => items.OrderByDescending(x => GetOnTimeRate(x)),
+            "trust_asc" => items.OrderBy(x => x.Trust),
+            "trust_desc" => items.OrderByDescending(x => x.Trust),
+            "completed_desc" => items.OrderByDescending(x => x.CompletedCount),
+            "missed_desc" => items.OrderByDescending(x => x.MissedCount),
+            "missrate_desc" => items.OrderByDescending(x => x.MissRate),
+            "name_asc" => items.OrderBy(x => x.FullName),
+            _ => items.OrderByDescending(x => x.Trust)
+        };
+
+        _filtered = items.ToList();
+    }
+
+    private void BuildSummary()
+    {
+        if (_filtered.Count == 0)
+        {
+            _avgTrust = 0;
+            _totalCompleted = 0;
+            _totalMissed = 0;
+            _missRate = 0;
+            _summaryTrustLevel = "—";
+            return;
+        }
+
+        _totalCompleted = _filtered.Sum(x => x.CompletedCount);
+        _totalMissed = _filtered.Sum(x => x.MissedCount);
+
+        var total = Math.Max(1, _totalCompleted + _totalMissed);
+
+        _missRate = Math.Round((decimal)_totalMissed / total * 100, 2);
+        _avgTrust = Math.Round(_filtered.Average(x => x.Trust), 2);
+        _summaryTrustLevel = GetTrustLevel(_avgTrust);
+    }
+
+    private void OnFiltersChanged()
+    {
+        ApplyFilters();
+        BuildSummary();
+    }
+
+    private static decimal GetOnTimeRate(ScoreRowDto s)
+    {
+        var total = s.TotalAssignedCount > 0
+            ? s.TotalAssignedCount
+            : s.CompletedCount + s.MissedCount;
+
+        if (total <= 0)
+            return 0;
+
+        var raw = (decimal)s.CompletedCount / total * 100;
+
+        return Math.Clamp(Math.Round(raw, 2), 0, 100);
+    }
+
+    private static string GetTrustLevel(decimal trust) => trust switch
+    {
+        >= 80 => "Надёжный",
+        >= 50 => "Под наблюдением",
+        _ => "Риск"
+    };
+
+    private static string GetTrustClass(decimal trust) => trust switch
+    {
+        >= 80 => "good",
+        >= 50 => "watch",
+        _ => "risk"
+    };
+
+    private static string GetMedal(int index) => index switch
+    {
+        0 => "🥇",
+        1 => "🥈",
+        2 => "🥉",
+        _ => string.Empty
+    };
+
+    private static string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "?";
+
+        var parts = fullName
+            .Trim()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 1)
+            return parts[0][0].ToString().ToUpper();
+
+        return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+    }
+
+    private void OpenMember(int memberId)
+        => Nav.NavigateTo($"/workplace/members/{memberId}");
+
+    private void GoToInfo()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}");
+
+    private void GoToMembers()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/members");
+
+    private void GoToDashboard()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/dashboard");
+
+    private void GoToStats()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/stats");
+
+    private void GoToFiles()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/files");
+
+    private void GoToTasks()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/tasks");
+
+    private void GoToChat()
+        => Nav.NavigateTo($"/workplace/projects/{ProjectId}/teams/{TeamId}/chat");
+}

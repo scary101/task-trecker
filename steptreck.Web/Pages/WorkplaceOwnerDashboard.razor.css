@@ -1,0 +1,243 @@
+.owner-dashboard-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.owner-head,
+.section-head.tight {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.owner-head h1,
+.section-head h2,
+.owner-panel h2 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.owner-empty {
+    padding: 18px;
+    color: var(--text-secondary);
+}
+
+.owner-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.owner-kpi {
+    padding: 18px;
+    display: grid;
+    gap: 8px;
+}
+
+.owner-kpi span,
+.owner-kpi small,
+.owner-panel p,
+.owner-facts span,
+.metric-list span,
+.role-row span,
+.compact-item span {
+    color: var(--text-secondary);
+}
+
+.owner-kpi strong {
+    font-size: 34px;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+.owner-kpi.risk strong,
+.tone-risk {
+    color: #d94848;
+}
+
+.tone-ok {
+    color: #21845f;
+}
+
+.owner-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.owner-panel {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 230px;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.panel-head p {
+    margin: 5px 0 0;
+    font-size: 13px;
+}
+
+.panel-head i {
+    color: var(--text-muted);
+    font-size: 22px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    border-radius: 999px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.status-badge.ok {
+    color: #16634a;
+    background: rgba(33, 132, 95, 0.13);
+}
+
+.status-badge.warn {
+    color: #a65a16;
+    background: rgba(219, 128, 42, 0.14);
+}
+
+.owner-facts,
+.metric-list,
+.role-stack {
+    display: grid;
+    gap: 10px;
+}
+
+.owner-facts div,
+.metric-list div,
+.role-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 34px;
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.62);
+}
+
+.owner-facts strong,
+.metric-list strong,
+.role-row strong {
+    color: var(--text-primary);
+    text-align: right;
+}
+
+.feature-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.feature-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.feature-chip.on {
+    color: #16634a;
+    background: rgba(33, 132, 95, 0.12);
+}
+
+.feature-chip.off {
+    color: var(--text-muted);
+    background: rgba(var(--border-rgb), 0.44);
+}
+
+.owner-section {
+    display: grid;
+    gap: 12px;
+}
+
+.owner-table {
+    display: grid;
+    overflow: hidden;
+    border: 1px solid rgba(var(--border-rgb), 0.82);
+    border-radius: 12px;
+    background: rgba(var(--surface-rgb), 0.72);
+}
+
+.owner-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.5fr) repeat(5, minmax(96px, 0.7fr));
+    gap: 10px;
+    align-items: center;
+    min-height: 46px;
+    padding: 0 14px;
+    border-bottom: 1px solid rgba(var(--border-rgb), 0.7);
+    color: var(--text-primary);
+}
+
+.owner-row:last-child {
+    border-bottom: none;
+}
+
+.owner-row.head {
+    min-height: 40px;
+    background: rgba(var(--bg-card-soft-rgb), 0.8);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.owner-table.payments .owner-row {
+    grid-template-columns: minmax(80px, 0.5fr) repeat(5, minmax(120px, 1fr));
+}
+
+.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.owner-split {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.compact-list {
+    display: grid;
+    gap: 10px;
+}
+
+.compact-item {
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.compact-item strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.compact-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    font-size: 12px;
+    font-weight: 700;
+}
